@@ -1,0 +1,163 @@
+states:
+  unknown:
+    priority: 0
+    parent: null
+
+  headquarter:
+    priority: 1
+    parent: null
+    requires:
+      switch_global_button:
+        template:
+          - "switch_to_world.png"
+          - "switch_to_world_alert.png"
+        color: false
+        threshold: 0.65
+
+  area:
+    priority: 1
+    parent: null
+    requires:
+      switch_global_button:
+        template:
+          - "switch_to_base_from_area.png"
+          - "switch_to_base_from_area_alert.png"
+        color: false
+        threshold: 0.65
+
+  world:
+    priority: 1
+    parent: null
+    requires:
+      switch_global_button:
+        template: "switch_to_base_from_world.png"
+        color: true
+        threshold: 0.65
+  
+  heroes:
+    priority: 2
+    parent:
+      - headquarter
+      - area
+    requires:
+      hero_modal_header:
+        template: "title_hero_list.png"
+        color: false
+        threshold: 0.85
+
+  alliance:
+    priority: 2
+    parent:
+      - headquarter
+      - area
+    requires:
+      alliance_modal_header:
+        template: "title_alliance.png"
+        color: false
+        threshold: 0.85
+
+  mail:
+    priority: 2
+    parent:
+      - headquarter
+      - area
+    requires:
+      mail_modal_header:
+        template: "title_mail.png"
+        color: false
+        threshold: 0.85
+
+  inventory:
+    priority: 2
+    parent:
+      - headquarter
+      - area
+    requires:
+      inventory_modal_header:
+        template: "title_inventory.png"
+        color: false
+        threshold: 0.85
+
+  #alliance_wars_rally_intel:
+  #alliance_wars_individual_intel:
+
+  alliance_help:
+    priority: 3
+    parent:
+      - alliance
+    requires:
+      alliance_help_modal_header:
+        template: "title_alliance_help.png"
+        color: false
+        threshold: 0.85
+
+  alliance_gifts_regular:
+    priority: 3
+    parent:
+      - alliance
+    requires:
+      alliance_gifts_modal_header:
+        template: "title_alliance_gifts.png"
+        color: false
+        threshold: 0.85
+      alliance_gifts_tabs:
+        template: "subtitle_alliance_gifts_regular.png"
+        color: true
+        threshold: 0.95
+
+  alliance_gifts_premium:
+    priority: 3
+    parent:
+      - alliance
+    requires:
+      alliance_gifts_modal_header:
+        template: "title_alliance_gifts.png"
+        color: false
+        threshold: 0.85
+      alliance_gifts_tabs:
+        template: "subtitle_alliance_gifts_premium.png"
+        color: true
+        threshold: 0.95
+
+  alliance_members:
+    priority: 3
+    parent:
+      - alliance
+    requires:
+      alliance_members_modal_header:
+        template: "title_member_list.png"
+        color: false
+        threshold: 0.85
+
+  store_alliance:
+    priority: 3
+    parent:
+      - alliance
+      # - building_store
+    requires:
+      store_modal_header:
+        template: "title_store.png"
+        color: false
+        threshold: 0.85
+      store_tabs:
+        template: "subtitle_store_alliance.png"
+
+  alliance_techs:
+    priority: 3
+    parent:
+      - alliance
+    requires:
+      alliance_techs_modal_header:
+        template: "title_alliance_techs.png"
+        color: false
+        threshold: 0.85
+
+  alliance_tech:
+    priority: 4
+    parent:
+      - alliance_tech
+    requires:
+      alliance_tech_modal_header:
+        template: "title_alliance_tech.png"
+        color: true
+        threshold: 0.90

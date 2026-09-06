@@ -1,0 +1,239 @@
+rois:
+  heroes_global_button:
+    width: 135px
+    height: -100px
+    states:
+      - headquarter
+      - area
+
+  switch_global_button:
+    width: -135px
+    height: -100px
+    states:
+      - headquarter
+      - area
+
+  main_shop_button:
+    width: -125px
+    y: 0px
+    height: 65px
+
+  chat:
+    x: 135px
+    width: -135px
+    height: -100px
+    states:
+      - headquarter
+      - area
+
+  bottom_left_pane:
+    y: 465px
+    width: 80px
+    height: -100px
+    states:
+      - headquarter
+      - area
+
+  right_pane:
+    y: 65px
+    width: -165px
+    height: -100px
+    states:
+      - headquarter
+      - area
+
+  # fictive modal for every modal
+  modal:
+    align: center
+    width: 580px
+    height: full
+
+  # hero modal header (for state detection)
+  hero_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - heroes
+
+  # hero modal (full height for buttons)
+  hero_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - heroes
+
+  # alliance modal header (for state detection)
+  alliance_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - alliance
+
+  # alliance modal (full height for buttons)
+  alliance_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - alliance
+
+  # mail modal header (for state detection)
+  mail_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - mail
+
+  # mail modal (full height for buttons)
+  mail_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - mail
+
+  # inventory modal header (for state detection)
+  inventory_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - inventory
+
+  # inventory modal (full height for buttons)
+  inventory_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - inventory
+
+  # alliance help modal header (for state detection)
+  alliance_help_modal_header:
+    align: center
+    y: 165px
+    width: 545px
+    height: 60px
+    states:
+      - alliance_help
+
+  # alliance help modal (full height for buttons)
+  alliance_help_modal:
+    align: center
+    y: 225px
+    width: 545px
+    height: 700px
+    states:
+      - alliance_help
+
+  # alliance gifts modal header (for state detection)
+  alliance_gifts_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - alliance_gifts
+
+  # alliance gifts modal (full height for buttons)
+  alliance_gifts_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - alliance_gifts
+
+  # alliance gifts tabs (Regular / Premium)
+  alliance_gifts_tabs:
+    align: center
+    y: 215px
+    width: 580px
+    height: 85px
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+
+  alliance_members_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - alliance_members
+
+  alliance_members_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - alliance_members
+
+  store_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - store_alliance
+
+  store_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - store_alliance
+
+  store_tabs:
+    align: center
+    y: 60px
+    width: 580px
+    height: 100px
+    states:
+      - store_alliance
+
+  alliance_techs_modal_header:
+    align: center
+    y: 90px
+    width: 545px
+    height: 60px
+    states:
+      - alliance_techs
+
+  alliance_techs_modal:
+    align: center
+    y: 90px
+    width: 545px
+    height: 790px
+    states:
+      - alliance_techs
+
+  alliance_tech_modal_header:
+    align: center
+    y: 155px
+    width: 545px
+    height: 60px
+    states:
+      - alliance_tech
+
+  alliance_tech_modal:
+    align: center
+    y: 155px
+    width: 545px
+    height: 730px
+    states:
+      - alliance_tech 

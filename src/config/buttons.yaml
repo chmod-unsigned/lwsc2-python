@@ -1,0 +1,345 @@
+buttons:
+  # HEADQUARTER/AREA
+  # main shop button
+  main_shop_button:
+    requires:
+      main_shop_button:
+        template: "button_main_shop.png"
+        color: false
+        threshold: 0.75
+
+  # inventory button
+  inventory_button:
+    requires:
+      right_pane:
+        template: "button_inventory.png"
+        color: false
+        threshold: 0.75
+  inventory_notification_button:
+    requires:
+      right_pane:
+        template: "button_inventory_notification.png"
+        color: false
+        threshold: 0.75
+
+  # mail button
+  mail_button:
+    requires:
+      right_pane:
+        template: "button_mail.png"
+        color: false
+        threshold: 0.75
+  mail_notification_button:
+    requires:
+      right_pane:
+        template: "button_mail_notification.png"
+        color: false
+        threshold: 0.75
+
+  # alliance button
+  alliance_button:
+    requires:
+      right_pane:
+        template: "button_alliance.png"
+        color: false
+        threshold: 0.75
+  alliance_notification_button:
+    requires:
+      right_pane:
+        template: "button_alliance_notification.png"
+        color: false
+        threshold: 0.75
+
+  # help button
+  help_button:
+    auto: auto_help
+    save_mouse: true
+    cooldown: 2.0
+    requires:
+      right_pane:
+        template: "button_help.png"
+        color: true
+        threshold: 0.90
+
+  # mission button
+  mission_button:
+#    states:
+#      - headquarter
+#      - area
+    requires:
+      bottom_left_pane:
+        template: "button_mission.png"
+        color: false
+        threshold: 0.75
+  mission_notification_button:
+#    states:
+#      - headquarter
+#      - area
+    requires:
+      bottom_left_pane:
+        template: "button_mission_notification.png"
+        color: false
+        threshold: 0.75
+
+  # radar tasks button
+  radar_tasks_button:
+#    states:
+#      - headquarter
+#      - area
+    requires:
+      bottom_left_pane:
+        template: "button_radar_tasks.png"
+        color: false
+        threshold: 0.75
+  radar_tasks_notification_button:
+#    states:
+#      - headquarter
+#      - area
+    requires:
+      bottom_left_pane:
+        template: "button_radar_tasks_notification.png"
+        color: false
+        threshold: 0.75
+
+
+  # AREA
+  # search button
+  search_button:
+#    states:
+#      - area
+    requires:
+      bottom_left_pane:
+        template: "button_search.png"
+        color: false
+        threshold: 0.75
+
+  # MODAL (Mail, Alliance, Inventory, Heroes...)
+  # return
+  return_button:
+    states:
+      - alliance
+      - mail
+      - inventory
+      - heroes
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+      - alliance_members
+      - store_alliance
+    requires:
+      modal:
+        template: "button_return.png"
+        color: false
+        threshold: 0.85
+
+  # Alliance
+  alliance_wars_button:
+    states:
+      - alliance
+    requires:
+      alliance_modal:
+        template: "button_alliance_wars.png"
+        color: true
+        threshold: 0.96
+
+  alliance_help_button:
+    states:
+      - alliance
+    requires:
+      alliance_modal:
+        template: "button_alliance_help.png"
+        color: true
+        threshold: 0.96
+
+  alliance_gifts_button:
+    states:
+      - alliance
+    requires:
+      alliance_modal:
+        template: "button_alliance_gifts.png"
+        color: true
+        threshold: 0.96
+
+  alliance_members_button:
+    states:
+      - alliance
+    requires:
+      alliance_modal:
+        template: "button_alliance_members.png"
+        color: true
+        threshold: 0.96
+
+  alliance_alliance_store_button:
+    states:
+      - alliance
+    requires:
+      alliance_modal:
+        template: "button_alliance_alliance_store.png"
+        color: true
+        threshold: 0.96
+
+  alliance_techs_button:
+    states:
+      - alliance
+    requires:
+      alliance_modal:
+        template: "button_alliance_techs.png"
+        color: true
+        threshold: 0.96
+
+  alliance_help_close_button:
+    states:
+      - alliance_help
+    requires:
+      alliance_help_modal_header:
+        template: "button_close.png"
+        color: false
+        threshold: 0.85
+
+  alliance_help_help_all_button:
+    states:
+      - alliance_help
+    requires:
+      alliance_help_modal:
+        template: "button_alliance_help_help_all.png"
+        color: false
+        threshold: 0.85
+
+  alliance_gifts_regular_active_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_regular_active.png"
+        color: true
+        threshold: 0.90
+  alliance_gifts_regular_inactive_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_regular_inactive.png"
+        color: true
+        threshold: 0.90
+  alliance_gifts_regular_active_notification_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_regular_active_notification.png"
+        color: true
+        threshold: 0.90
+  alliance_gifts_regular_inactive_notification_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_regular_inactive_notification.png"
+        color: true
+        threshold: 0.90
+  alliance_gifts_premium_active_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_premium_active.png"
+        color: true
+        threshold: 0.90
+  alliance_gifts_premium_inactive_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_premium_inactive.png"
+        color: true
+        threshold: 0.90
+  alliance_gifts_premium_active_notification_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        #missing
+        template: "button_alliance_gifts_premium_active_notification.png"
+        color: true
+        threshold: 0.90
+  alliance_gifts_premium_inactive_notification_button:
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        #missing
+        template: "button_alliance_gifts_premium_inactive_notification.png"
+        color: true
+        threshold: 0.90
+
+  alliance_gifts_regular_claim_all_button:
+    states:
+      - alliance_gifts_regular
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_claim_all.png"
+        color: true
+        threshold: 0.90
+
+  alliance_gifts_premium_claim_all_button:
+    states:
+      - alliance_gifts_premium
+    requires:
+      alliance_gifts_modal:
+        template: "button_alliance_gifts_claim_all.png"
+        color: true
+        threshold: 0.90
+
+  # alliance techs
+  alliance_techs_like_button:
+    states:
+      - alliance_techs
+    requires:
+      alliance_techs_modal:
+        template: "button_alliance_techs_like.png"
+        color: true
+        threshold: 0.90
+
+  alliance_techs_close_button:
+    states:
+      - alliance_techs
+    requires:
+      alliance_techs_modal_header:
+        template: "button_close.png"
+        color: false
+        threshold: 0.85
+
+  # alliance tech
+  alliance_tech_close_button:
+    states:
+      - alliance_tech
+    requires:
+      alliance_tech_modal:
+        template: "button_close.png"
+        color: true
+        threshold: 0.90
+
+  alliance_tech_donate_diamond_button:
+    states:
+      - alliance_tech
+    requires:
+      alliance_tech_modal:
+        template: "button_alliance_tech_donate_diamond.png"
+        color: true
+        threshold: 0.90
+
+  alliance_tech_donate_gold_button:
+    states:
+      - alliance_tech
+    requires:
+      alliance_tech_modal:
+        template: "button_alliance_tech_donate_gold.png"
+        color: true
+        threshold: 0.90

@@ -1,0 +1,171 @@
+actions:
+  alliance:
+    label: "Alliance"
+    states:
+      - headquarter
+      - area
+    buttons:
+      - alliance_button
+      - alliance_notification_button
+
+  mail:
+    label: "Mail"
+    states:
+      - headquarter
+      - area
+    buttons:
+      - mail_button
+      - mail_notification_button
+
+  inventory:
+    label: "Inventory"
+    states:
+      - headquarter
+      - area
+    buttons:
+      - inventory_button
+      - inventory_notification_button
+
+  return:
+    label: "Return"
+    variant: "error"
+    states:
+      - alliance
+      - mail
+      - inventory
+      - heroes
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+      - alliance_members
+      - store_alliance
+    buttons:
+      - return_button
+
+  alliance_wars:
+    label: "Alliance wars"
+    states:
+      - alliance
+    buttons:
+      - alliance_wars_button
+
+  alliance_help:
+    label: "Alliance help"
+    states:
+      - alliance
+    buttons:
+      - alliance_help_button
+
+  alliance_gifts:
+    label: "Alliance gifts"
+    states:
+      - alliance
+    buttons:
+      - alliance_gifts_button
+
+  alliance_members:
+    label: "Alliance members"
+    states:
+      - alliance
+    buttons:
+      - alliance_members_button
+
+  alliance_alliance_store:
+    label: "Alliance store"
+    states:
+      - alliance
+    buttons:
+      - alliance_alliance_store_button
+
+  alliance_techs:
+    label: "Alliance techs"
+    states:
+      - alliance
+    buttons:
+      - alliance_techs_button
+
+  alliance_techs_close:
+    label: "Close"
+    states:
+      - alliance_techs
+    buttons:
+      - alliance_techs_close_button
+
+  alliance_help_close:
+    label: "Close"
+    states:
+      - alliance_help
+    buttons:
+      - alliance_help_close_button
+
+  alliance_help_help_all:
+    label: "Help all"
+    states:
+      - alliance_help
+    buttons:
+      - alliance_help_help_all_button
+
+  alliance_gifts_regular:
+    label: "Regular gifts"
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    buttons:
+      - alliance_gifts_regular_active_button
+      - alliance_gifts_regular_inactive_button
+      - alliance_gifts_regular_active_notification_button
+      - alliance_gifts_regular_inactive_notification_button
+
+  alliance_gifts_premium:
+    label: "Premium gifts"
+    states:
+      - alliance_gifts_regular
+      - alliance_gifts_premium
+    buttons:
+      - alliance_gifts_premium_active_button
+      - alliance_gifts_premium_inactive_button
+      - alliance_gifts_premium_active_notification_button
+      - alliance_gifts_premium_inactive_notification_button
+
+  alliance_gifts_regular_claim_all:
+    label: "Claim all"
+    states:
+      - alliance_gifts_regular
+    buttons:
+      - alliance_gifts_regular_claim_all_button
+
+  alliance_gifts_premium_claim_all:
+    label: "Claim all"
+    states:
+      - alliance_gifts_premium
+    buttons:
+      - alliance_gifts_premium_claim_all_button
+
+  alliance_techs_like:
+    label: "Techs"
+    states:
+      - alliance_techs
+    buttons:
+      - alliance_techs_like_button
+
+  # alliance tech modal actions
+  alliance_tech_donate_gold:
+    label: "Donate gold"
+    states:
+      - alliance_tech
+    buttons:
+      - alliance_tech_donate_gold_button
+    hold_duration: 15
+
+  alliance_tech_donate_diamond:
+    label: "Donate diamond"
+    states:
+      - alliance_tech
+    buttons:
+      - alliance_tech_donate_diamond_button
+
+  alliance_tech_close:
+    label: "Close"
+    states:
+      - alliance_tech
+    buttons:
+      - alliance_tech_close_button

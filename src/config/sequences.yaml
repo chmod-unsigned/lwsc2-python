@@ -1,0 +1,83 @@
+sequences:
+  morning_routine:
+    label: "Annoying tasks"
+    sequences:
+      - type: action
+        value: "alliance_tech_donate_gold"
+      # - type: script
+      #   value: scripts/script1.py
+
+  give_alliance_tech_gold:
+    label: "Give to alliance tech"
+    visible: true
+    sequences:
+      - type: action
+        value: alliance
+        sleep: 1
+      - type: action
+        value: alliance_techs
+      - type: action
+        value: alliance_techs_like
+      - type: action
+        value: alliance_tech_donate_gold
+      - type: action
+        value: alliance_tech_close
+      - type: action
+        value: alliance_techs_close
+      - type: action
+        value: return
+
+  claim_alliance_gifts_regular:
+    label: "Claim regular alliance gifts"
+    visible: true
+    sequences:
+      - type: action
+        value: alliance
+      - type: action
+        value: alliance_gifts
+      - type: action
+        value: alliance_gifts_regular
+      - type: action
+        value: alliance_gifts_regular_claim_all
+        optional: true
+      - type: click
+        value: current_position
+      - type: action
+        value: return
+      - type: wait_state
+        value: alliance
+      - type: action
+        value: return
+
+  claim_alliance_gifts_premium:
+    label: "Claim premium alliance gifts"
+    visible: true
+    sequences:
+      - type: action
+        value: alliance
+      - type: action
+        value: alliance_gifts
+      - type: action
+        value: alliance_gifts_premium
+      - type: action
+        value: alliance_gifts_premium_claim_all
+        optional: true
+      - type: click
+        value: current_position
+      - type: action
+        value: return
+      - type: wait_state
+        value: alliance
+      - type: action
+        value: return
+
+  claim_alliance_gifts_all:
+    label: "Claim all alliance gifts"
+    visible: true
+    sequences:
+      - type: sequence
+        value: claim_alliance_gifts_regular
+      - type: wait_state
+        value: [ area, headquarter ]
+      - type: sequence
+        value: claim_alliance_gifts_premium

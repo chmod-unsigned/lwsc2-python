@@ -1,0 +1,8 @@
+.venv-nogil
+.venv
+src/__pycache__/
+.idea/
+!screenshots/.gitkeep
+screenshots/
+*.py[cod]
+*$py.class
