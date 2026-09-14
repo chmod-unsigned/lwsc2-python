@@ -118,18 +118,72 @@ buttons:
   return_button:
     states:
       - alliance
-      - mail
       - inventory
       - heroes
       - alliance_gifts_regular
       - alliance_gifts_premium
       - alliance_members
       - store_alliance
+      - mail
+      - mail_battle_report
+      - mail_alliance
     requires:
       modal:
         template: "button_return.png"
         color: false
         threshold: 0.85
+
+  # Mail
+  mail_battle_report_button:
+    states:
+      - mail
+    requires:
+      modal:
+        template: "button_mail_battle_report.png"
+        color: true
+  mail_alliance_button:
+    states:
+      - mail
+    requires:
+      modal:
+        template: "button_mail_alliance.png"
+        color: true
+  mail_event_button:
+    states:
+      - mail
+    requires:
+      modal:
+        template: "button_mail_event.png"
+        color: true
+  mail_system_button:
+    states:
+      - mail
+    requires:
+      modal:
+        template: "button_mail_system.png"
+        color: true
+  mail_regular_button:
+    states:
+      - mail
+    requires:
+      modal:
+        template: "button_mail_regular.png"
+        color: true
+  mail_in-app_purchases_button:
+    states:
+      - mail
+    requires:
+      modal:
+        template: "button_mail_in-app_purchases.png"
+        color: true
+  mail_favorite_button:
+    states:
+      - mail
+    requires:
+      modal:
+        template: "button_mail_favorite.png"
+        color: true
+
 
   # Alliance
   alliance_wars_button:
@@ -213,6 +267,7 @@ buttons:
         template: "button_alliance_gifts_regular_active.png"
         color: true
         threshold: 0.90
+
   alliance_gifts_regular_inactive_button:
     states:
       - alliance_gifts_regular
@@ -222,24 +277,7 @@ buttons:
         template: "button_alliance_gifts_regular_inactive.png"
         color: true
         threshold: 0.90
-  alliance_gifts_regular_active_notification_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
-    requires:
-      alliance_gifts_modal:
-        template: "button_alliance_gifts_regular_active_notification.png"
-        color: true
-        threshold: 0.90
-  alliance_gifts_regular_inactive_notification_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
-    requires:
-      alliance_gifts_modal:
-        template: "button_alliance_gifts_regular_inactive_notification.png"
-        color: true
-        threshold: 0.90
+
   alliance_gifts_premium_active_button:
     states:
       - alliance_gifts_regular
@@ -249,6 +287,7 @@ buttons:
         template: "button_alliance_gifts_premium_active.png"
         color: true
         threshold: 0.90
+
   alliance_gifts_premium_inactive_button:
     states:
       - alliance_gifts_regular
@@ -256,26 +295,6 @@ buttons:
     requires:
       alliance_gifts_modal:
         template: "button_alliance_gifts_premium_inactive.png"
-        color: true
-        threshold: 0.90
-  alliance_gifts_premium_active_notification_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
-    requires:
-      alliance_gifts_modal:
-        #missing
-        template: "button_alliance_gifts_premium_active_notification.png"
-        color: true
-        threshold: 0.90
-  alliance_gifts_premium_inactive_notification_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
-    requires:
-      alliance_gifts_modal:
-        #missing
-        template: "button_alliance_gifts_premium_inactive_notification.png"
         color: true
         threshold: 0.90
 

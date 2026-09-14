@@ -56,17 +56,6 @@ states:
         color: false
         threshold: 0.85
 
-  mail:
-    priority: 2
-    parent:
-      - headquarter
-      - area
-    requires:
-      mail_modal_header:
-        template: "title_mail.png"
-        color: false
-        threshold: 0.85
-
   inventory:
     priority: 2
     parent:
@@ -161,3 +150,29 @@ states:
         template: "title_alliance_tech.png"
         color: true
         threshold: 0.90
+
+  # MAIL
+  mail:
+    priority: 2
+    parent:
+      - headquarter
+      - area
+    requires:
+      mail_modal_header:
+        template: "title_mail.png"
+
+  mail_battle_report:
+    priority: 3
+    parent:
+      - mail
+    requires:
+      mail_battle_report_modal_header:
+        template: "title_mail_battle_report.png"
+
+  mail_alliance:
+    priority: 3
+    parent:
+      - mail
+    requires:
+      mail_aliance_modal_header:
+        template: "title_mail_alliance.png"

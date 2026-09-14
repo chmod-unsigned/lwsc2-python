@@ -84,24 +84,6 @@ rois:
     states:
       - alliance
 
-  # mail modal header (for state detection)
-  mail_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
-    states:
-      - mail
-
-  # mail modal (full height for buttons)
-  mail_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
-    states:
-      - mail
-
   # inventory modal header (for state detection)
   inventory_modal_header:
     align: center
@@ -120,6 +102,60 @@ rois:
     states:
       - inventory
 
+  # MAIL
+  ## MAIL MAIN
+  # mail modal header (for state detection)
+  mail_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - mail
+  # mail modal (full height for buttons)
+  mail_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - mail
+  ### MAILS BATTLE_REPORT
+  # mail battle report modal header (for state detection)
+  mail_battle_report_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - mail_battle_report
+  # mail battle report modal (full height for buttons)
+  mail_battle_report_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - mail_battle_report
+  ### MAIL ALLIANCE
+  # mail alliance modal header (for state detection)
+  mail_alliance_modal_header:
+    align: center
+    y: 0px
+    width: 580px
+    height: 70px
+    states:
+      - mail_alliance
+  # mail alliance modal (full height for buttons)
+  mail_alliance_modal:
+    align: center
+    y: 0px
+    width: 580px
+    height: full
+    states:
+      - mail_alliance
+
+  # ALLIANCE
   # alliance help modal header (for state detection)
   alliance_help_modal_header:
     align: center

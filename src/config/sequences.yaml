@@ -36,10 +36,9 @@ sequences:
       - type: action
         value: alliance_gifts
       - type: action
-        value: alliance_gifts_regular
-      - type: action
         value: alliance_gifts_regular_claim_all
         optional: true
+        sleep: 2
       - type: click
         value: current_position
       - type: action
@@ -62,6 +61,7 @@ sequences:
       - type: action
         value: alliance_gifts_premium_claim_all
         optional: true
+        sleep: 2
       - type: click
         value: current_position
       - type: action

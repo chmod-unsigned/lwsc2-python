@@ -38,6 +38,9 @@ actions:
       - alliance_gifts_premium
       - alliance_members
       - store_alliance
+      - mail
+      - mail_battle_report
+      - mail_alliance
     buttons:
       - return_button
 
@@ -169,3 +172,47 @@ actions:
       - alliance_tech
     buttons:
       - alliance_tech_close_button
+
+  # mail modal actions
+  mail_battle_report:
+    label: "Battle report"
+    states:
+      - mail
+    buttons:
+      - mail_battle_report_button
+  mail_alliance:
+    label: "Alliance"
+    states:
+      - mail
+    buttons:
+      - mail_alliance_button
+  mail_event:
+    label: "Event"
+    states:
+      - mail
+    buttons:
+      - mail_event_button
+  mail_system:
+    label: "System"
+    states:
+      - mail
+    buttons:
+      - mail_system_button
+  mail_regular:
+    label: "Regular"
+    states:
+      - mail
+    buttons:
+      - mail_regular_button
+  mail_in-app_purchases:
+    label: "In-App purchases"
+    states:
+      - mail
+    buttons:
+      - mail_in-app_purchases_button
+  mail_favorite:
+    label: "Favorite"
+    states:
+      - mail
+    buttons:
+      - mail_favorite_button
