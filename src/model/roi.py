@@ -31,6 +31,7 @@ class ResolvedROI:
     width: int
     height: int
     states: List[str] = field(default_factory=list)
+    exclude_rois: List['ResolvedROI'] = field(default_factory=list)
 
     @property
     def left(self) -> int:
@@ -55,11 +56,34 @@ class ResolvedROI:
 
     def crop_numpy(self, img: np.ndarray) -> np.ndarray:
         """Découpe la ROI depuis un tableau NumPy (image HxWxC ou HxW)."""
-        return img[self.top:self.bottom, self.left:self.right]
+        crop = img[self.top:self.bottom, self.left:self.right]
+        if not self.exclude_rois:
+            return crop
+            
+        # Copie nécessaire pour ne pas altérer l'image source
+        crop = crop.copy()
+        for ex in self.exclude_rois:
+            # Translation des coordonnées absolues vers les coordonnées relatives du crop
+            ex_left = max(0, ex.left - self.left)
+            ex_top = max(0, ex.top - self.top)
+            ex_right = min(self.width, ex.right - self.left)
+            ex_bottom = min(self.height, ex.bottom - self.top)
+            
+            if ex_left < ex_right and ex_top < ex_bottom:
+                crop[ex_top:ex_bottom, ex_left:ex_right] = 0
+                
+        return crop
 
     def crop_pillow(self, pil_img: Any) -> Any:
         """Découpe la ROI depuis une image PIL.Image."""
-        return pil_img.crop(self.bbox)
+        if not self.exclude_rois:
+            return pil_img.crop(self.bbox)
+        
+        # Fallback NumPy pour gérer les exclusions
+        arr = np.array(pil_img)
+        arr_cropped = self.crop_numpy(arr)
+        from PIL import Image
+        return Image.fromarray(arr_cropped)
 
     def crop_mss(self, sct_img: Any) -> np.ndarray:
         """Découpe la ROI directement depuis un ScreenShot mss en retournant un tableau NumPy BGRA."""
@@ -78,6 +102,7 @@ class ROISpec:
     align: Optional[str] = None
     anchor: Optional[str] = None
     states: List[str] = field(default_factory=list)
+    exclude: List[str] = field(default_factory=list)
 
     def resolve(self, window_width: int, window_height: int) -> ResolvedROI:
         """
@@ -217,6 +242,7 @@ class ROIRegistry:
                 align=spec.get("align"),
                 anchor=spec.get("anchor"),
                 states=spec.get("states", []),
+                exclude=spec.get("exclude", []),
             )
 
     def get(self, name: str) -> Optional[ROISpec]:
@@ -224,10 +250,19 @@ class ROIRegistry:
 
     def resolve_all(self, window_width: int, window_height: int) -> Dict[str, ResolvedROI]:
         """Résout toutes les ROIs pour une dimension d'écran donnée."""
-        return {
+        resolved = {
             name: spec.resolve(window_width, window_height)
             for name, spec in self.rois.items()
         }
+        
+        # Résolution des masques d'exclusion (exclude)
+        for name, spec in self.rois.items():
+            if spec.exclude:
+                for ex_name in spec.exclude:
+                    if ex_name in resolved:
+                        resolved[name].exclude_rois.append(resolved[ex_name])
+                        
+        return resolved
 
     def for_state(self, state_name: str) -> List[ROISpec]:
         """Retourne toutes les ROIs associées à un état donné."""

@@ -1,8 +1,18 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 import yaml
 
+@dataclass
+class DragSpec:
+    type: str = "relative"
+    dx: Optional[int] = None
+    dy: Optional[int] = None
+    start_roi: Optional[str] = None
+    end_roi: Optional[str] = None
+    from_coord: Optional[Dict[str, Any]] = None
+    to_coord: Optional[Dict[str, Any]] = None
+    duration: float = 0.5
 
 @dataclass
 class ActionSpec:
@@ -14,6 +24,11 @@ class ActionSpec:
     buttons: List[str] = field(default_factory=list)
     variant: str = "primary"
     hold_duration: Optional[float] = None
+    drag: Optional[DragSpec] = None
+    save_mouse: bool = False
+    cooldown: float = 0.0
+    last_triggered: float = 0.0
+    always_show: bool = False
 
     @property
     def stay_clicked(self) -> Optional[float]:
@@ -77,6 +92,21 @@ class ActionManager:
                 except ValueError:
                     hold_val = None
 
+
+            drag_raw = spec.get("drag")
+            drag_val = None
+            if drag_raw and isinstance(drag_raw, dict):
+                drag_val = DragSpec(
+                    type=drag_raw.get("type", "relative"),
+                    dx=drag_raw.get("dx"),
+                    dy=drag_raw.get("dy"),
+                    start_roi=drag_raw.get("start"),
+                    end_roi=drag_raw.get("end"),
+                    from_coord=drag_raw.get("from"),
+                    to_coord=drag_raw.get("to"),
+                    duration=float(drag_raw.get("duration", 0.5)),
+                )
+
             self.actions[str(action_id)] = ActionSpec(
                 id=str(action_id),
                 label=label,
@@ -84,6 +114,10 @@ class ActionManager:
                 buttons=buttons,
                 variant=variant,
                 hold_duration=hold_val,
+                drag=drag_val,
+                save_mouse=bool(spec.get("save_mouse", False)),
+                cooldown=float(spec.get("cooldown", 0.0)),
+                always_show=bool(spec.get("always_show", False)),
             )
 
     def get(self, action_id: str) -> Optional[ActionSpec]:
@@ -108,7 +142,7 @@ class ActionManager:
             v_set = set(visible_buttons.keys()) if isinstance(visible_buttons, dict) else set(visible_buttons)
             actions = [
                 act for act in actions
-                if not act.buttons or any(b in v_set for b in act.buttons)
+                if act.always_show or not act.buttons or any(b in v_set for b in act.buttons)
             ]
         return actions
 

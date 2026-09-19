@@ -1,4 +1,91 @@
 actions:
+  # Drag and drop
+  drag_left:
+    label: "<="
+    states:
+      - area
+      - world
+    save_mouse: true
+    drag:
+      type: ab
+      from:
+        x: 80px
+        y: center
+      to:
+        x: -80px
+        y: center
+      duration: 0.5
+  drag_right:
+    label: "=>"
+    states:
+      - area
+      - world
+    save_mouse: true
+    drag:
+      type: ab
+      from:
+        x: -80px
+        y: center
+      to:
+        x: 80px
+        y: center
+      duration: 0.5
+  drag_up:
+    label: "^"
+    states:
+      - area
+      - world
+    save_mouse: true
+    drag:
+      type: ab
+      from:
+        x: center
+        y: 10px
+      to:
+        x: center
+        y: -110px
+      duration: 0.5
+  drag_down:
+    label: "v"
+    states:
+      - area
+      - world
+    save_mouse: true
+    drag:
+      type: ab
+      from:
+        x: center
+        y: -110px
+      to:
+        x: center
+        y: 10px
+      duration: 0.5
+
+  find_mine_food:
+    label: "Find food mine"
+    states:
+      - area
+      - world
+    always_show: true
+    buttons:
+      - poi_mine_food
+  find_mine_iron:
+    label: "Find iron mine"
+    states:
+      - area
+      - world
+    always_show: true
+    buttons:
+      - poi_mine_iron
+  find_mine_gold:
+    label: "Find gold mine"
+    states:
+      - area
+      - world
+    always_show: true
+    buttons:
+      - poi_mine_gold
+
   alliance:
     label: "Alliance"
     states:

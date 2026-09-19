@@ -42,63 +42,67 @@ rois:
       - headquarter
       - area
 
+  map_pane:
+    x: 0
+    y: 0
+    width: full
+    height: full
+    exclude:
+      - chat
+      - bottom_left_pane
+      - right_pane
+      - heroes_global_button
+      - switch_global_button
+      - main_shop_button
+    states:
+      - area
+      - world
+
   # fictive modal for every modal
-  modal:
+  standard_modal: &standard_modal
     align: center
     width: 580px
     height: full
 
-  # hero modal header (for state detection)
-  hero_modal_header:
+  standard_modal_header: &standard_modal_header
     align: center
     y: 0px
     width: 580px
     height: 70px
+
+  # hero modal header (for state detection)
+  hero_modal_header:
+    <<: *standard_modal_header
     states:
       - heroes
 
   # hero modal (full height for buttons)
   hero_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - heroes
 
   # alliance modal header (for state detection)
   alliance_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - alliance
 
   # alliance modal (full height for buttons)
   alliance_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - alliance
 
   # inventory modal header (for state detection)
   inventory_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - inventory
 
   # inventory modal (full height for buttons)
   inventory_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - inventory
 
@@ -106,52 +110,34 @@ rois:
   ## MAIL MAIN
   # mail modal header (for state detection)
   mail_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - mail
   # mail modal (full height for buttons)
   mail_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - mail
   ### MAILS BATTLE_REPORT
   # mail battle report modal header (for state detection)
   mail_battle_report_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - mail_battle_report
   # mail battle report modal (full height for buttons)
   mail_battle_report_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - mail_battle_report
   ### MAIL ALLIANCE
   # mail alliance modal header (for state detection)
   mail_alliance_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - mail_alliance
   # mail alliance modal (full height for buttons)
   mail_alliance_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - mail_alliance
 
@@ -176,19 +162,13 @@ rois:
 
   # alliance gifts modal header (for state detection)
   alliance_gifts_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - alliance_gifts
 
   # alliance gifts modal (full height for buttons)
   alliance_gifts_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - alliance_gifts
 
@@ -203,34 +183,22 @@ rois:
       - alliance_gifts_premium
 
   alliance_members_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - alliance_members
 
   alliance_members_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - alliance_members
 
   store_modal_header:
-    align: center
-    y: 0px
-    width: 580px
-    height: 70px
+    <<: *standard_modal_header
     states:
       - store_alliance
 
   store_modal:
-    align: center
-    y: 0px
-    width: 580px
-    height: full
+    <<: *standard_modal
     states:
       - store_alliance
 

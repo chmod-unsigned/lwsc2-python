@@ -63,18 +63,12 @@ buttons:
 
   # mission button
   mission_button:
-#    states:
-#      - headquarter
-#      - area
     requires:
       bottom_left_pane:
         template: "button_mission.png"
         color: false
         threshold: 0.75
   mission_notification_button:
-#    states:
-#      - headquarter
-#      - area
     requires:
       bottom_left_pane:
         template: "button_mission_notification.png"
@@ -83,18 +77,12 @@ buttons:
 
   # radar tasks button
   radar_tasks_button:
-#    states:
-#      - headquarter
-#      - area
     requires:
       bottom_left_pane:
         template: "button_radar_tasks.png"
         color: false
         threshold: 0.75
   radar_tasks_notification_button:
-#    states:
-#      - headquarter
-#      - area
     requires:
       bottom_left_pane:
         template: "button_radar_tasks_notification.png"
@@ -105,8 +93,6 @@ buttons:
   # AREA
   # search button
   search_button:
-#    states:
-#      - area
     requires:
       bottom_left_pane:
         template: "button_search.png"
@@ -116,79 +102,52 @@ buttons:
   # MODAL (Mail, Alliance, Inventory, Heroes...)
   # return
   return_button:
-    states:
-      - alliance
-      - inventory
-      - heroes
-      - alliance_gifts_regular
-      - alliance_gifts_premium
-      - alliance_members
-      - store_alliance
-      - mail
-      - mail_battle_report
-      - mail_alliance
     requires:
-      modal:
+      standard_modal:
         template: "button_return.png"
         color: false
         threshold: 0.85
 
   # Mail
   mail_battle_report_button:
-    states:
-      - mail
     requires:
-      modal:
+      standard_modal:
         template: "button_mail_battle_report.png"
         color: true
   mail_alliance_button:
-    states:
-      - mail
     requires:
-      modal:
+      standard_modal:
         template: "button_mail_alliance.png"
         color: true
   mail_event_button:
-    states:
-      - mail
     requires:
-      modal:
+      standard_modal:
         template: "button_mail_event.png"
         color: true
   mail_system_button:
-    states:
-      - mail
     requires:
-      modal:
+      standard_modal:
         template: "button_mail_system.png"
         color: true
   mail_regular_button:
-    states:
-      - mail
     requires:
-      modal:
+      standard_modal:
         template: "button_mail_regular.png"
         color: true
   mail_in-app_purchases_button:
-    states:
-      - mail
     requires:
-      modal:
+      standard_modal:
         template: "button_mail_in-app_purchases.png"
         color: true
   mail_favorite_button:
-    states:
-      - mail
     requires:
-      modal:
+      standard_modal:
         template: "button_mail_favorite.png"
         color: true
 
 
   # Alliance
   alliance_wars_button:
-    states:
-      - alliance
     requires:
       alliance_modal:
         template: "button_alliance_wars.png"
@@ -196,8 +155,6 @@ buttons:
         threshold: 0.96
 
   alliance_help_button:
-    states:
-      - alliance
     requires:
       alliance_modal:
         template: "button_alliance_help.png"
@@ -205,8 +162,6 @@ buttons:
         threshold: 0.96
 
   alliance_gifts_button:
-    states:
-      - alliance
     requires:
       alliance_modal:
         template: "button_alliance_gifts.png"
@@ -214,8 +169,6 @@ buttons:
         threshold: 0.96
 
   alliance_members_button:
-    states:
-      - alliance
     requires:
       alliance_modal:
         template: "button_alliance_members.png"
@@ -223,8 +176,6 @@ buttons:
         threshold: 0.96
 
   alliance_alliance_store_button:
-    states:
-      - alliance
     requires:
       alliance_modal:
         template: "button_alliance_alliance_store.png"
@@ -232,8 +183,6 @@ buttons:
         threshold: 0.96
 
   alliance_techs_button:
-    states:
-      - alliance
     requires:
       alliance_modal:
         template: "button_alliance_techs.png"
@@ -241,8 +190,6 @@ buttons:
         threshold: 0.96
 
   alliance_help_close_button:
-    states:
-      - alliance_help
     requires:
       alliance_help_modal_header:
         template: "button_close.png"
@@ -250,8 +197,6 @@ buttons:
         threshold: 0.85
 
   alliance_help_help_all_button:
-    states:
-      - alliance_help
     requires:
       alliance_help_modal:
         template: "button_alliance_help_help_all.png"
@@ -259,9 +204,6 @@ buttons:
         threshold: 0.85
 
   alliance_gifts_regular_active_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
     requires:
       alliance_gifts_modal:
         template: "button_alliance_gifts_regular_active.png"
@@ -269,9 +211,6 @@ buttons:
         threshold: 0.90
 
   alliance_gifts_regular_inactive_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
     requires:
       alliance_gifts_modal:
         template: "button_alliance_gifts_regular_inactive.png"
@@ -279,9 +218,6 @@ buttons:
         threshold: 0.90
 
   alliance_gifts_premium_active_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
     requires:
       alliance_gifts_modal:
         template: "button_alliance_gifts_premium_active.png"
@@ -289,9 +225,6 @@ buttons:
         threshold: 0.90
 
   alliance_gifts_premium_inactive_button:
-    states:
-      - alliance_gifts_regular
-      - alliance_gifts_premium
     requires:
       alliance_gifts_modal:
         template: "button_alliance_gifts_premium_inactive.png"
@@ -299,8 +232,6 @@ buttons:
         threshold: 0.90
 
   alliance_gifts_regular_claim_all_button:
-    states:
-      - alliance_gifts_regular
     requires:
       alliance_gifts_modal:
         template: "button_alliance_gifts_claim_all.png"
@@ -308,8 +239,6 @@ buttons:
         threshold: 0.90
 
   alliance_gifts_premium_claim_all_button:
-    states:
-      - alliance_gifts_premium
     requires:
       alliance_gifts_modal:
         template: "button_alliance_gifts_claim_all.png"
@@ -318,8 +247,6 @@ buttons:
 
   # alliance techs
   alliance_techs_like_button:
-    states:
-      - alliance_techs
     requires:
       alliance_techs_modal:
         template: "button_alliance_techs_like.png"
@@ -327,8 +254,6 @@ buttons:
         threshold: 0.90
 
   alliance_techs_close_button:
-    states:
-      - alliance_techs
     requires:
       alliance_techs_modal_header:
         template: "button_close.png"
@@ -337,8 +262,6 @@ buttons:
 
   # alliance tech
   alliance_tech_close_button:
-    states:
-      - alliance_tech
     requires:
       alliance_tech_modal:
         template: "button_close.png"
@@ -346,8 +269,6 @@ buttons:
         threshold: 0.90
 
   alliance_tech_donate_diamond_button:
-    states:
-      - alliance_tech
     requires:
       alliance_tech_modal:
         template: "button_alliance_tech_donate_diamond.png"
@@ -355,10 +276,28 @@ buttons:
         threshold: 0.90
 
   alliance_tech_donate_gold_button:
-    states:
-      - alliance_tech
     requires:
       alliance_tech_modal:
         template: "button_alliance_tech_donate_gold.png"
         color: true
         threshold: 0.90
+
+  # POI
+  poi_mine_food:
+    requires:
+      map_pane:
+        template: "poi/mine_food.png"
+        method: "feature"
+        threshold: 0.60
+  poi_mine_iron:
+    requires:
+      map_pane:
+        template: "poi/mine_iron.png"
+        method: "feature"
+        threshold: 0.60
+  poi_mine_gold:
+    requires:
+      map_pane:
+        template: "poi/mine_gold.png"
+        method: "feature"
+        threshold: 0.60

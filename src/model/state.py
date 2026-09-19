@@ -18,6 +18,7 @@ class StateCondition:
     template: Union[str, List[str]]
     threshold: float = 0.90
     color: bool = True
+    method: str = "exact"
 
 
 @dataclass
@@ -57,7 +58,7 @@ class StateSpec:
             for tpl in templates:
                 try:
                     score = matcher.compute_similarity(
-                        crop, tpl, color=condition.color
+                        crop, tpl, color=condition.color, method=condition.method
                     )
                     if score > best_score:
                         best_score = score
@@ -169,6 +170,7 @@ class StateManager:
                         template=t_val,
                         threshold=parse_threshold(cond.get("threshold"), default=state_threshold),
                         color=bool(cond.get("color", True)),
+                        method=cond.get("method", "exact"),
                     )
 
             self.states[name] = StateSpec(
@@ -219,10 +221,22 @@ class StateManager:
             if m:
                 return (cur_name, sc, det)
 
+        # Détermination des états valides si on force la continuité (State Tree Pruning)
+        valid_names = None
+        if enforce_parent and cur_name != "unknown":
+            valid_names = {cur_name}
+            if cur_spec:
+                valid_names.update(cur_spec.parents)
+            valid_names.update(s.name for s in self.states.values() if cur_name in s.parents)
+
         # 2. Évaluation multithreadée par palier de priorité décroissante (3 -> 2 -> 1)
         # Les modales et sous-modales priment toujours rigoureusement sur les écrans racine.
         for prio in sorted(self._prio_groups.keys(), reverse=True):
             tier_states = self._prio_groups[prio]
+            
+            if valid_names is not None:
+                tier_states = [s for s in tier_states if s.name in valid_names]
+                
             if not tier_states:
                 continue
 

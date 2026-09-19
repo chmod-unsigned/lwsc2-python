@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union, Optional, Tuple, Dict
+from typing import Union, Optional, Tuple, Dict, Any, List
 import numpy as np
 from PIL import Image
 
@@ -25,6 +25,9 @@ class ImageMatcher:
         self._cache_gray: Dict[str, np.ndarray] = {}
         self._cache_sub4: Dict[str, np.ndarray] = {}
         self._cache_sub2: Dict[str, np.ndarray] = {}
+        self._cache_orb_kp: Dict[str, Any] = {}
+        self._cache_orb_des: Dict[str, np.ndarray] = {}
+        self._orb = None
         self._path_cache: Dict[str, Path] = {}
         self._transient_gray_cache: Dict[int, np.ndarray] = {}
         self._transient_rgb_cache: Dict[int, np.ndarray] = {}
@@ -85,6 +88,13 @@ class ImageMatcher:
             search_dirs.append(self.templates_dir)
 
         weights = np.array([0.299, 0.587, 0.114], dtype=np.float32)
+        
+        try:
+            import cv2
+            self._orb = cv2.ORB_create(nfeatures=500)
+        except ImportError:
+            self._orb = None
+
         loaded_count = 0
         seen_resolved = set()
 
@@ -104,6 +114,11 @@ class ImageMatcher:
                         self._cache_gray[resolved_str] = arr_gray
                         self._cache_sub4[resolved_str] = arr_gray[::4, ::4]
                         self._cache_sub2[resolved_str] = arr_gray[::2, ::2]
+                        
+                        if self._orb is not None:
+                            kp, des = self._orb.detectAndCompute(arr_gray.astype(np.uint8), None)
+                            self._cache_orb_kp[resolved_str] = kp
+                            self._cache_orb_des[resolved_str] = des
 
                         loaded_count += 1
 
@@ -115,6 +130,10 @@ class ImageMatcher:
                     self._cache_gray[file_path.name] = arr_gray
                     self._cache_sub4[file_path.name] = self._cache_sub4[resolved_str]
                     self._cache_sub2[file_path.name] = self._cache_sub2[resolved_str]
+                    
+                    if self._orb is not None:
+                        self._cache_orb_kp[file_path.name] = self._cache_orb_kp[resolved_str]
+                        self._cache_orb_des[file_path.name] = self._cache_orb_des[resolved_str]
 
                     self._path_cache[file_path.name] = resolved
                     self._path_cache[str(file_path)] = resolved
@@ -158,6 +177,13 @@ class ImageMatcher:
     def to_gray_array(self, img: Union[Image.Image, np.ndarray, Path, str]) -> np.ndarray:
         """Convertit une image PIL, un chemin ou un tableau NumPy en float32 niveaux de gris (H, W)."""
         weights = np.array([0.299, 0.587, 0.114], dtype=np.float32)
+        
+        try:
+            import cv2
+            self._orb = cv2.ORB_create(nfeatures=500)
+        except ImportError:
+            self._orb = None
+
 
         if isinstance(img, (str, Path)):
             str_key = str(img)
@@ -197,20 +223,58 @@ class ImageMatcher:
         crop: Union[Image.Image, np.ndarray, Path, str],
         template: Union[Image.Image, np.ndarray, Path, str],
         color: bool = True,
+        method: str = "exact",
     ) -> float:
         """Calcule le score de similarité (de 0.0 à 1.0) entre une ROI et un template."""
-        return self.match_detailed(crop, template, color=color)[0]
+        return self.match_detailed(crop, template, color=color, method=method)[0]
 
     def match_detailed(
         self,
         crop: Union[Image.Image, np.ndarray, Path, str],
         template: Union[Image.Image, np.ndarray, Path, str],
         color: bool = True,
+        method: str = "exact",
     ) -> Tuple[float, Tuple[int, int], Tuple[int, int]]:
         """
         Calcule le score de similarité, la position (x, y) et la taille (w, h) du template.
         Retourne : (score, (match_x, match_y), (template_w, template_h)).
         """
+        if method == "feature":
+            return self._match_orb(crop, template)
+        
+        matches = self.match_detailed_multiple(crop, template, threshold=0.0, color=color, method=method)
+        if matches:
+            return matches[0]
+        
+        # Fallback to 0 if nothing found
+        return (0.0, (0, 0), (0, 0))
+
+    def match_detailed_multiple(
+        self,
+        crop: Union[Image.Image, np.ndarray, Path, str],
+        template: Union[Image.Image, np.ndarray, Path, str],
+        threshold: float = 0.6,
+        color: bool = True,
+        method: str = "exact",
+    ) -> List[Tuple[float, Tuple[int, int], Tuple[int, int]]]:
+        """
+        Trouve TOUTES les correspondances au-dessus d'un certain seuil.
+        Retourne une liste triée par score décroissant.
+        """
+        if method == "feature":
+            return self._match_orb_multiple(crop, template, threshold)
+            
+        res = self._match_exact_single(crop, template, color)
+        if res[0] >= threshold:
+            return [res]
+        return []
+
+    def _match_exact_single(
+        self,
+        crop: Union[Image.Image, np.ndarray, Path, str],
+        template: Union[Image.Image, np.ndarray, Path, str],
+        color: bool = True
+    ) -> Tuple[float, Tuple[int, int], Tuple[int, int]]:
         # Préparation des matrices RGB et/ou Grayscale
         if color:
             crop_rgb = self.to_rgb_array(crop)
@@ -327,3 +391,106 @@ class ImageMatcher:
         diff = np.abs(crop_target - resized_arr)
         score = float(max(0.0, 1.0 - (np.mean(diff) / 255.0)))
         return (score, (0, 0), (tw, th))
+
+    def _match_orb(self, crop, template) -> Tuple[float, Tuple[int, int], Tuple[int, int]]:
+        # Multi-scale Template Matching (replacing ORB)
+        # Extremely robust for handling zoom levels and day/night cycles
+        try:
+            import cv2
+        except ImportError:
+            return (0.0, (0, 0), (0, 0))
+            
+        crop_gray = self.to_gray_array(crop).astype(np.uint8)
+        tpl_gray = self.to_gray_array(template).astype(np.uint8)
+        
+        ch, cw = crop_gray.shape[:2]
+        th, tw = tpl_gray.shape[:2]
+        
+        if th == 0 or tw == 0 or ch == 0 or cw == 0:
+            return (0.0, (0, 0), (tw, th))
+            
+        best_score = 0.0
+        best_loc = (0, 0)
+        best_dim = (tw, th)
+        
+        # Test multiple scales from 0.4 (zoomed out) to 1.5 (zoomed in)
+        scales = np.linspace(0.4, 1.5, 12)
+        
+        for scale in scales:
+            width = int(tw * scale)
+            height = int(th * scale)
+            
+            if width < 10 or height < 10 or width > cw or height > ch:
+                continue
+                
+            resized_tpl = cv2.resize(tpl_gray, (width, height))
+            res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, max_loc = cv2.minMaxLoc(res)
+            
+            if max_val > best_score:
+                best_score = max_val
+                best_loc = max_loc
+                best_dim = (width, height)
+                
+        # If score is somewhat low, it might be due to UI overlays (like level bubbles)
+        # We return the best found score across all scales
+        return (float(max(0.0, best_score)), best_loc, best_dim)
+
+    def _match_orb_multiple(self, crop, template, threshold: float) -> List[Tuple[float, Tuple[int, int], Tuple[int, int]]]:
+        # Multi-scale Template Matching returning multiple occurrences (with NMS)
+        try:
+            import cv2
+        except ImportError:
+            return []
+            
+        crop_gray = self.to_gray_array(crop).astype(np.uint8)
+        tpl_gray = self.to_gray_array(template).astype(np.uint8)
+        
+        ch, cw = crop_gray.shape[:2]
+        th, tw = tpl_gray.shape[:2]
+        
+        if th == 0 or tw == 0 or ch == 0 or cw == 0:
+            return []
+            
+        all_candidates = []
+        scales = np.linspace(0.4, 1.5, 12)
+        
+        for scale in scales:
+            width = int(tw * scale)
+            height = int(th * scale)
+            
+            if width < 10 or height < 10 or width > cw or height > ch:
+                continue
+                
+            resized_tpl = cv2.resize(tpl_gray, (width, height))
+            res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED)
+            
+            # Find all locations above threshold
+            locs = np.where(res >= threshold)
+            for pt in zip(*locs[::-1]): # pt is (x, y)
+                score = res[pt[1], pt[0]]
+                all_candidates.append((float(score), (int(pt[0]), int(pt[1])), (width, height)))
+                
+        # Sort candidates by score descending
+        all_candidates.sort(key=lambda x: x[0], reverse=True)
+        
+        # Non-Maximum Suppression (NMS) based on distance
+        final_matches = []
+        for cand in all_candidates:
+            score, pos, dim = cand
+            # Check distance to already accepted matches
+            overlap = False
+            for accepted in final_matches:
+                acc_pos = accepted[1]
+                acc_dim = accepted[2]
+                dist_x = abs(pos[0] - acc_pos[0])
+                dist_y = abs(pos[1] - acc_pos[1])
+                # If centers are closer than half the width/height, consider it the same object
+                if dist_x < max(dim[0], acc_dim[0]) * 0.5 and dist_y < max(dim[1], acc_dim[1]) * 0.5:
+                    overlap = True
+                    break
+            
+            if not overlap:
+                final_matches.append(cand)
+                
+        return final_matches

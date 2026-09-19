@@ -81,3 +81,10 @@ sequences:
         value: [ area, headquarter ]
       - type: sequence
         value: claim_alliance_gifts_premium
+
+  harvest_all_mines:
+    label: "Récolter les mines"
+    visible: true
+    sequences:
+      - type: script
+        value: "scripts/harvest.py"

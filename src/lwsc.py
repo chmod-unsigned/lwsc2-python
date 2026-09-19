@@ -88,8 +88,8 @@ class Lwsc(App):
         self.last_resolved_rois: Dict[str, Any] = {}
         self.last_visible_buttons: Dict[str, Any] = {}
 
-        config_dir = Path(__file__).resolve().parent / "config"
         project_root = Path(__file__).resolve().parent.parent
+        config_dir = project_root / "config"
 
         self.action_mgr = ActionManager(config_dir / "actions.yaml")
         self.sequence_mgr = SequenceManager(config_dir / "sequences.yaml")
@@ -118,6 +118,17 @@ class Lwsc(App):
             lang=self.lang,
             matcher=self.matcher,
         )
+
+        # Injection dynamique des états depuis les actions vers les boutons
+        # Cela permet d'éviter la redondance dans buttons.yaml
+        for action in self.action_mgr.actions.values():
+            for btn_name in action.buttons:
+                btn = self.button_mgr.get(btn_name)
+                if btn:
+                    for s in action.states:
+                        if s not in btn.states:
+                            btn.states.append(s)
+
         self.game_window = Window("Last War")
         self.mouse_speed_factor: float = 3.0  # Vitesse réaliste 'human x3'
 
@@ -248,11 +259,10 @@ class Lwsc(App):
             action = self.action_mgr.get(action_id)
             if action:
                 self.query_one("#console", Log).write_line(f"⚡ Action '{action.label}' déclenchée...")
-                self.action_click_button(
-                    action.label,
-                    *action.buttons,
-                    hold_duration=action.hold_duration,
-                )
+                if action.drag:
+                    self.action_drag(action)
+                else:
+                    self.action_click_button(action)
         elif btn_id.startswith("seq_"):
             seq_id = btn_id[4:]
             sequence = self.sequence_mgr.get(seq_id)
@@ -384,23 +394,109 @@ class Lwsc(App):
         return False
 
     @work(thread=True)
+
+    def action_drag(self, action: Any) -> None:
+        import pyautogui
+        import time
+        from model.roi import ROISpec
+        
+        log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
+        
+        if action.cooldown > 0 and time.time() - action.last_triggered < action.cooldown:
+            log_ui(f"⏳ Action '{action.label}' ignorée (cooldown de {action.cooldown}s).")
+            return
+            
+        drag = action.drag
+        win = self.game_window
+        if not win or not win.exists():
+            log_ui("⚠️ Impossible d'exécuter le drag : fenêtre de jeu introuvable.")
+            return
+            
+        geom = win.get_geometry()
+        if not geom:
+            return
+            
+        start_x, start_y = 0, 0
+        if drag.type == "relative":
+            btn_id = next((b for b in action.buttons if b in self.last_visible_buttons), None)
+            if not btn_id:
+                log_ui(f"⚠️ Action '{action.label}': Aucun bouton visible pour démarrer le drag.")
+                return
+            _, match_data = self.last_visible_buttons[btn_id]
+            start_x = match_data['pos'][0] + match_data['size'][0] // 2
+            start_y = match_data['pos'][1] + match_data['size'][1] // 2
+        elif drag.type == "roi":
+            if not drag.start_roi: return
+            start_spec = self.roi_reg.get(drag.start_roi)
+            if not start_spec: return
+            res = start_spec.resolve(geom.width, geom.height)
+            start_x = geom.left + res.left + res.width // 2
+            start_y = geom.top + res.top + res.height // 2
+        elif drag.type == "ab":
+            temp_roi = ROISpec(name="temp_from", x=drag.from_coord.get("x"), y=drag.from_coord.get("y"), width=1, height=1)
+            res = temp_roi.resolve(geom.width, geom.height)
+            start_x = geom.left + res.x
+            start_y = geom.top + res.y
+            
+        end_x, end_y = start_x, start_y
+        if drag.type == "relative":
+            end_x = start_x + (drag.dx or 0)
+            end_y = start_y + (drag.dy or 0)
+        elif drag.type == "roi":
+            if not drag.end_roi: return
+            end_spec = self.roi_reg.get(drag.end_roi)
+            if not end_spec: return
+            res = end_spec.resolve(geom.width, geom.height)
+            end_x = geom.left + res.left + res.width // 2
+            end_y = geom.top + res.top + res.height // 2
+        elif drag.type == "ab":
+            temp_roi = ROISpec(name="temp_to", x=drag.to_coord.get("x"), y=drag.to_coord.get("y"), width=1, height=1)
+            res = temp_roi.resolve(geom.width, geom.height)
+            end_x = geom.left + res.x
+            end_y = geom.top + res.y
+            
+        orig_mouse = None
+        if action.save_mouse:
+            orig_mouse = pyautogui.position()
+            
+        pyautogui.moveTo(start_x, start_y)
+        time.sleep(0.05)
+        pyautogui.mouseDown(button="left")
+        time.sleep(0.1)
+        pyautogui.moveTo(end_x, end_y, duration=drag.duration)
+        time.sleep(0.2)
+        pyautogui.mouseUp(button="left")
+        
+        if orig_mouse:
+            pyautogui.moveTo(*orig_mouse)
+            
+        action.last_triggered = time.time()
+
+    @work(thread=True)
     def action_click_button(
         self,
-        action_name: str,
-        *button_names: str,
-        restore_cursor: bool = True,
-        hold_duration: Optional[float] = None,
+        action: Any,
+        log_ui: Any = None,
     ) -> None:
-        log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
+        if log_ui is None:
+            log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
+            
+        import time
+        if action.cooldown > 0 and time.time() - action.last_triggered < action.cooldown:
+            log_ui(f"⏳ Action '{action.label}' ignorée (cooldown de {action.cooldown}s).")
+            return
+            
         try:
-            self._find_and_click_button(
-                list(button_names),
-                hold_duration=hold_duration,
+            success = self._find_and_click_button(
+                action.buttons,
+                hold_duration=action.hold_duration,
                 timeout=0.0,
-                restore_cursor=restore_cursor,
-                action_name=action_name,
+                restore_cursor=action.save_mouse,
+                action_name=action.label,
                 log_ui=log_ui,
             )
+            if success:
+                action.last_triggered = time.time()
         except Exception as e:
             log_ui(f"⚠️ Erreur lors de l'action : {e}")
 
@@ -448,25 +544,43 @@ class Lwsc(App):
             stype = step.type.lower()
             if stype == "action":
                 act_spec = self.action_mgr.get(step.value)
-                if act_spec:
-                    buttons = act_spec.buttons
-                    hold = act_spec.hold_duration
-                    label = act_spec.label
-                else:
-                    buttons = [step.value]
-                    hold = None
-                    label = step.value
-
                 is_optional = bool(step.kwargs.get("optional", False))
                 timeout_val = float(step.kwargs.get("timeout", 2.5 if is_optional else 5.0))
-                clicked = self._find_and_click_button(
-                    buttons,
-                    hold_duration=hold,
-                    timeout=timeout_val,
-                    restore_cursor=False,
-                    action_name=label,
-                    log_ui=log_ui,
-                )
+                
+                if act_spec and act_spec.drag:
+                    clicked = False
+                    if act_spec.drag.type == "relative":
+                        start_t = time.time()
+                        while time.time() - start_t < timeout_val:
+                            win = self.get_game_window()
+                            if win:
+                                self.refresh_rois(win, self.roi_reg.resolve_all(win.width, win.height))
+                            if any(b in self.last_visible_buttons for b in act_spec.buttons):
+                                self.action_drag(act_spec)
+                                clicked = True
+                                break
+                            time.sleep(0.1)
+                    else:
+                        self.action_drag(act_spec)
+                        clicked = True
+                else:
+                    if act_spec:
+                        buttons = act_spec.buttons
+                        hold = act_spec.hold_duration
+                        label = act_spec.label
+                    else:
+                        buttons = [step.value]
+                        hold = None
+                        label = step.value
+
+                    clicked = self._find_and_click_button(
+                        buttons,
+                        hold_duration=hold,
+                        timeout=timeout_val,
+                        restore_cursor=False,
+                        action_name=label,
+                        log_ui=log_ui,
+                    )
                 if not clicked:
                     if is_optional:
                         log_ui(f"ℹ️ [Action {label}] Non trouvée (étape optionnelle), poursuite...")
@@ -521,6 +635,40 @@ class Lwsc(App):
                     else:
                         log_ui(f"⚠️ Échec de l'étape {idx} (attente état '{target_state}'). Arrêt de la séquence.")
                         return False
+
+            elif stype == "script":
+                script_path = step.value
+                is_optional = bool(step.kwargs.get("optional", False))
+                log_ui(f"📜 Exécution du script Python : '{script_path}'...")
+                try:
+                    import importlib.util
+                    import sys
+                    from pathlib import Path
+                    
+                    path = Path(script_path)
+                    if not path.is_absolute():
+                        path = Path.cwd() / path
+                        
+                    if not path.exists():
+                        log_ui(f"⚠️ Script introuvable : {path}")
+                        if not is_optional: return False
+                    else:
+                        mod_spec = importlib.util.spec_from_file_location("custom_script", str(path))
+                        if mod_spec and mod_spec.loader:
+                            custom_module = importlib.util.module_from_spec(mod_spec)
+                            sys.modules["custom_script"] = custom_module
+                            mod_spec.loader.exec_module(custom_module)
+                            if hasattr(custom_module, "run"):
+                                custom_module.run(self)
+                                log_ui(f"✅ Script '{script_path}' terminé avec succès.")
+                            else:
+                                log_ui(f"⚠️ Le script '{script_path}' ne contient pas de fonction 'run(app)'.")
+                                if not is_optional: return False
+                except Exception as e:
+                    import traceback
+                    log_ui(f"❌ Erreur lors de l'exécution du script '{script_path}': {str(e)}")
+                    traceback.print_exc()
+                    if not is_optional: return False
 
             else:
                 log_ui(f"⚠️ Type d'étape inconnu : '{stype}' (valeur: {step.value})")
@@ -588,7 +736,7 @@ class Lwsc(App):
                 return
 
             # Chargement de la configuration des ROIs
-            config_path = Path(__file__).parent / "config" / "rois.yaml"
+            config_path = Path(__file__).parent.parent / "config" / "rois.yaml"
             if not config_path.exists():
                 log_ui(f"Fichier de configuration introuvable : {config_path}")
                 return

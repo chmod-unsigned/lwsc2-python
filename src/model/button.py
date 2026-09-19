@@ -19,6 +19,7 @@ class ButtonCondition:
     template: Union[str, List[str]]
     threshold: float = 0.85
     color: bool = True
+    method: str = "exact"
 
 
 @dataclass
@@ -156,7 +157,7 @@ class ButtonSpec:
             for tpl in templates:
                 try:
                     score, pos, tpl_size = matcher.match_detailed(
-                        crop, tpl, color=condition.color
+                        crop, tpl, color=condition.color, method=condition.method
                     )
                     if score > best_score:
                         best_score = score
@@ -178,6 +179,65 @@ class ButtonSpec:
 
         avg_score = float(np.mean(list(scores.values()))) if scores else 1.0
         return (True, avg_score, scores, primary_pos, primary_roi, primary_size)
+
+    def evaluate_multiple(
+        self,
+        crops: Dict[str, Union[Image.Image, np.ndarray]],
+        matcher: "ImageMatcher",
+        threshold_override: Optional[float] = None
+    ) -> List["ButtonMatch"]:
+        """
+        Évalue toutes les occurrences de ce bouton dans les crops.
+        """
+        if not self.requires:
+            return []
+
+        all_matches = []
+        for roi_name, cond in self.requires.items():
+            if roi_name not in crops:
+                continue
+                
+            crop = crops[roi_name]
+            if crop is None:
+                continue
+
+            templates = (
+                cond.template
+                if isinstance(cond.template, list)
+                else [cond.template]
+            )
+            if not templates:
+                continue
+                
+            color = cond.color
+            method = cond.method
+            threshold = cond.threshold
+            if threshold_override is not None:
+                threshold = threshold_override
+
+            for tpl in templates:
+                if not tpl: continue
+                # Call matcher.match_detailed_multiple
+                try:
+                    results = matcher.match_detailed_multiple(crop, tpl, threshold=threshold, color=color, method=method)
+                except AttributeError:
+                    results = []
+    
+                for score, pos, size in results:
+                    all_matches.append(ButtonMatch(
+                        name=self.name,
+                        is_visible=True,
+                        score=score,
+                        details={roi_name: score},
+                        position=pos,
+                        template_size=size,
+                        roi_name=roi_name,
+                        hold_duration=self.hold_duration,
+                    ))
+
+        # Sort by score descending
+        all_matches.sort(key=lambda m: m.score, reverse=True)
+        return all_matches
 
 
 class ButtonManager:
@@ -273,6 +333,7 @@ class ButtonManager:
                         template=t_val,
                         threshold=parse_threshold(cond.get("threshold"), default=btn_threshold),
                         color=bool(cond.get("color", True)),
+                        method=cond.get("method", "exact"),
                     )
 
             # Restauration du curseur (supporte save_mouse, restore_cursor, restore_position)
@@ -366,6 +427,60 @@ class ButtonManager:
         # Solution 1 : Arbitrage spatial par score de similarité décroissant
         candidates.sort(key=lambda b: b.score, reverse=True)
         accepted: Dict[str, ButtonMatch] = {}
+
+        for cand in candidates:
+            conflict = False
+            for acc in accepted.values():
+                if cand.roi_name == acc.roi_name and cand.roi_name != "":
+                    dx = abs(cand.position[0] - acc.position[0])
+                    dy = abs(cand.position[1] - acc.position[1])
+                    if dx <= spatial_disambiguation_radius and dy <= spatial_disambiguation_radius:
+                        # Conflit spatial : les deux variantes occupent le même emplacement
+                        conflict = True
+                        break
+            if not conflict:
+                accepted[cand.name] = cand
+
+        return accepted
+
+    def detect_all_visible_buttons(
+        self,
+        crops: Dict[str, Union[Image.Image, np.ndarray]],
+        current_state: Optional[str] = None,
+        target_names: Optional[Any] = None,
+    ) -> Dict[str, List[ButtonMatch]]:
+        """
+        Retourne TOUTES les occurrences visibles pour chaque bouton ciblé.
+        """
+        if target_names:
+            target_set = set(target_names)
+            items_to_check = [(n, self.buttons[n]) for n in target_set if n in self.buttons]
+        else:
+            items_to_check = list(self.buttons.items())
+
+        filtered_items = []
+        for name, button in items_to_check:
+            if current_state and button.states:
+                if current_state not in button.states:
+                    continue
+            filtered_items.append((name, button))
+
+        def _eval_multi(item: Tuple[str, "ButtonSpec"]) -> Tuple[str, List[ButtonMatch]]:
+            name, button = item
+            return name, button.evaluate_multiple(crops, self.matcher)
+
+        results: Dict[str, List[ButtonMatch]] = {}
+        if len(filtered_items) > 1:
+            eval_results = list(self._pool.map(_eval_multi, filtered_items))
+            for name, matches in eval_results:
+                if matches:
+                    results[name] = matches
+        elif filtered_items:
+            name, matches = _eval_multi(filtered_items[0])
+            if matches:
+                results[name] = matches
+
+        return results
 
         for cand in candidates:
             conflict = False

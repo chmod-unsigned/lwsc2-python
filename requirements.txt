@@ -4,3 +4,4 @@ mss>=9.0.0
 PyYAML>=6.0.3
 numpy>=2.4.6
 Pillow>=12.2.0
+opencv-python-headless>=4.10.0
