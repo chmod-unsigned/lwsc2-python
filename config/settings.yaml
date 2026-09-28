@@ -1,0 +1,13 @@
+auto_help: true
+auto_loot: false
+language: en
+shortcuts:
+  stop_action:
+    description: shortcuts.stop_action.description
+    key: <ctrl>+s
+  toggle_tracking:
+    description: shortcuts.toggle_tracking.description
+    key: <ctrl>+p
+  toggle_window:
+    description: shortcuts.toggle_window.description
+    key: <ctrl>+w

@@ -301,3 +301,49 @@ buttons:
         template: "poi/mine_gold.png"
         method: "feature"
         threshold: 0.60
+
+
+  # Resources
+  poi_resource_xp:
+    requires:
+      headquarter_pane:
+        template: "poi/resource_xp.png"
+        method: "feature"
+        threshold: 0.70
+  poi_resource_material:
+    requires:
+      headquarter_pane:
+        template: "poi/resource_material.png"
+        method: "feature"
+        threshold: 0.70
+  poi_resource_oil:
+    requires:
+      headquarter_pane:
+        template: "poi/resource_oil.png"
+        method: "feature"
+        threshold: 0.70
+  poi_resource_ore:
+    requires:
+      headquarter_pane:
+        template: "poi/resource_ore.png"
+        method: "feature"
+        threshold: 0.70
+  poi_resource_drone_component_chest:
+    requires:
+      headquarter_pane:
+        template: "poi/resource_drone_component_chest.png"
+        method: "feature"
+        threshold: 0.70
+  poi_resource_drone_parts:
+    requires:
+      headquarter_pane:
+        template: "poi/resource_drone_parts.png"
+        method: "feature"
+        threshold: 0.70
+  poi_resource_training_guidebook:
+    requires:
+      headquarter_pane:
+        template: "poi/resource_training_guidebook.png"
+        method: "feature"
+        threshold: 0.70
+        

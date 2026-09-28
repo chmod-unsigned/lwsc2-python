@@ -1,7 +1,7 @@
 actions:
   # Drag and drop
   drag_left:
-    label: "<="
+    label: "action.drag_left.label"
     states:
       - area
       - world
@@ -16,7 +16,7 @@ actions:
         y: center
       duration: 0.5
   drag_right:
-    label: "=>"
+    label: "action.drag_right.label"
     states:
       - area
       - world
@@ -31,7 +31,7 @@ actions:
         y: center
       duration: 0.5
   drag_up:
-    label: "^"
+    label: "action.drag_up.label"
     states:
       - area
       - world
@@ -46,7 +46,7 @@ actions:
         y: -110px
       duration: 0.5
   drag_down:
-    label: "v"
+    label: "action.drag_down.label"
     states:
       - area
       - world
@@ -62,7 +62,7 @@ actions:
       duration: 0.5
 
   find_mine_food:
-    label: "Find food mine"
+    label: "action.find_mine_food.label"
     states:
       - area
       - world
@@ -70,7 +70,7 @@ actions:
     buttons:
       - poi_mine_food
   find_mine_iron:
-    label: "Find iron mine"
+    label: "action.find_mine_iron.label"
     states:
       - area
       - world
@@ -78,7 +78,7 @@ actions:
     buttons:
       - poi_mine_iron
   find_mine_gold:
-    label: "Find gold mine"
+    label: "action.find_mine_gold.label"
     states:
       - area
       - world
@@ -87,7 +87,7 @@ actions:
       - poi_mine_gold
 
   alliance:
-    label: "Alliance"
+    label: "action.alliance.label"
     states:
       - headquarter
       - area
@@ -96,7 +96,7 @@ actions:
       - alliance_notification_button
 
   mail:
-    label: "Mail"
+    label: "action.mail.label"
     states:
       - headquarter
       - area
@@ -105,7 +105,7 @@ actions:
       - mail_notification_button
 
   inventory:
-    label: "Inventory"
+    label: "action.inventory.label"
     states:
       - headquarter
       - area
@@ -114,7 +114,7 @@ actions:
       - inventory_notification_button
 
   return:
-    label: "Return"
+    label: "action.return.label"
     variant: "error"
     states:
       - alliance
@@ -132,70 +132,70 @@ actions:
       - return_button
 
   alliance_wars:
-    label: "Alliance wars"
+    label: "action.alliance_wars.label"
     states:
       - alliance
     buttons:
       - alliance_wars_button
 
   alliance_help:
-    label: "Alliance help"
+    label: "action.alliance_help.label"
     states:
       - alliance
     buttons:
       - alliance_help_button
 
   alliance_gifts:
-    label: "Alliance gifts"
+    label: "action.alliance_gifts.label"
     states:
       - alliance
     buttons:
       - alliance_gifts_button
 
   alliance_members:
-    label: "Alliance members"
+    label: "action.alliance_members.label"
     states:
       - alliance
     buttons:
       - alliance_members_button
 
   alliance_alliance_store:
-    label: "Alliance store"
+    label: "action.alliance_alliance_store.label"
     states:
       - alliance
     buttons:
       - alliance_alliance_store_button
 
   alliance_techs:
-    label: "Alliance techs"
+    label: "action.alliance_techs.label"
     states:
       - alliance
     buttons:
       - alliance_techs_button
 
   alliance_techs_close:
-    label: "Close"
+    label: "action.alliance_techs_close.label"
     states:
       - alliance_techs
     buttons:
       - alliance_techs_close_button
 
   alliance_help_close:
-    label: "Close"
+    label: "action.alliance_help_close.label"
     states:
       - alliance_help
     buttons:
       - alliance_help_close_button
 
   alliance_help_help_all:
-    label: "Help all"
+    label: "action.alliance_help_help_all.label"
     states:
       - alliance_help
     buttons:
       - alliance_help_help_all_button
 
   alliance_gifts_regular:
-    label: "Regular gifts"
+    label: "action.alliance_gifts_regular.label"
     states:
       - alliance_gifts_regular
       - alliance_gifts_premium
@@ -206,7 +206,7 @@ actions:
       - alliance_gifts_regular_inactive_notification_button
 
   alliance_gifts_premium:
-    label: "Premium gifts"
+    label: "action.alliance_gifts_premium.label"
     states:
       - alliance_gifts_regular
       - alliance_gifts_premium
@@ -217,21 +217,21 @@ actions:
       - alliance_gifts_premium_inactive_notification_button
 
   alliance_gifts_regular_claim_all:
-    label: "Claim all"
+    label: "action.alliance_gifts_regular_claim_all.label"
     states:
       - alliance_gifts_regular
     buttons:
       - alliance_gifts_regular_claim_all_button
 
   alliance_gifts_premium_claim_all:
-    label: "Claim all"
+    label: "action.alliance_gifts_premium_claim_all.label"
     states:
       - alliance_gifts_premium
     buttons:
       - alliance_gifts_premium_claim_all_button
 
   alliance_techs_like:
-    label: "Techs"
+    label: "action.alliance_techs_like.label"
     states:
       - alliance_techs
     buttons:
@@ -239,7 +239,7 @@ actions:
 
   # alliance tech modal actions
   alliance_tech_donate_gold:
-    label: "Donate gold"
+    label: "action.alliance_tech_donate_gold.label"
     states:
       - alliance_tech
     buttons:
@@ -247,14 +247,14 @@ actions:
     hold_duration: 15
 
   alliance_tech_donate_diamond:
-    label: "Donate diamond"
+    label: "action.alliance_tech_donate_diamond.label"
     states:
       - alliance_tech
     buttons:
       - alliance_tech_donate_diamond_button
 
   alliance_tech_close:
-    label: "Close"
+    label: "action.alliance_tech_close.label"
     states:
       - alliance_tech
     buttons:
@@ -262,44 +262,95 @@ actions:
 
   # mail modal actions
   mail_battle_report:
-    label: "Battle report"
+    label: "action.mail_battle_report.label"
     states:
       - mail
     buttons:
       - mail_battle_report_button
   mail_alliance:
-    label: "Alliance"
+    label: "action.mail_alliance.label"
     states:
       - mail
     buttons:
       - mail_alliance_button
   mail_event:
-    label: "Event"
+    label: "action.mail_event.label"
     states:
       - mail
     buttons:
       - mail_event_button
   mail_system:
-    label: "System"
+    label: "action.mail_system.label"
     states:
       - mail
     buttons:
       - mail_system_button
   mail_regular:
-    label: "Regular"
+    label: "action.mail_regular.label"
     states:
       - mail
     buttons:
       - mail_regular_button
   mail_in-app_purchases:
-    label: "In-App purchases"
+    label: "action.mail_regular.label"
     states:
       - mail
     buttons:
       - mail_in-app_purchases_button
   mail_favorite:
-    label: "Favorite"
+    label: "action.mail_favorite.label"
     states:
       - mail
     buttons:
       - mail_favorite_button
+
+  # Resource POI headquarter
+  poi_resource_xp:
+    label: "action.poi_resource_xp.label"
+    states:
+      - headquarter
+    always_show: false
+    buttons:
+      - poi_resource_xp
+  poi_resource_material:
+    label: "action.poi_resource_material.label"
+    states:
+      - headquarter
+    always_show: false
+    buttons:
+      - poi_resource_material
+  poi_resource_oil:
+    label: "action.poi_resource_oil.label"
+    states:
+      - headquarter
+    always_show: false
+    buttons:
+      - poi_resource_oil
+  poi_resource_ore:
+    label: "action.poi_resource_ore.label"
+    states:
+      - headquarter
+    always_show: false
+    buttons:
+      - poi_resource_ore
+  poi_resource_drone_component_chest:
+    label: "action.poi_resource_drone_component_chest.label"
+    states:
+      - headquarter
+    always_show: false
+    buttons:
+      - poi_resource_drone_component_chest
+  poi_resource_drone_parts:
+    label: "action.poi_resource_drone_parts.label"
+    states:
+      - headquarter
+    always_show: false
+    buttons:
+      - poi_resource_drone_parts
+  poi_resource_training_guidebook:
+    label: "action.poi_resource_training_guidebook.label"
+    states:
+      - headquarter
+    always_show: false
+    buttons:
+      - poi_resource_training_guidebook
