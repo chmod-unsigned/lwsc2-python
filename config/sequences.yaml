@@ -1,6 +1,6 @@
 sequences:
   morning_routine:
-    label: "Annoying tasks"
+    label: "sequence.morning_routine.label"
     sequences:
       - type: action
         value: "alliance_tech_donate_gold"
@@ -8,7 +8,7 @@ sequences:
       #   value: scripts/script1.py
 
   give_alliance_tech_gold:
-    label: "Give to alliance tech"
+    label: "sequence.give_alliance_tech_gold.label"
     visible: true
     sequences:
       - type: action
@@ -28,7 +28,7 @@ sequences:
         value: return
 
   claim_alliance_gifts_regular:
-    label: "Claim regular alliance gifts"
+    label: "sequence.claim_alliance_gifts_regular.label"
     visible: true
     sequences:
       - type: action
@@ -49,7 +49,7 @@ sequences:
         value: return
 
   claim_alliance_gifts_premium:
-    label: "Claim premium alliance gifts"
+    label: "sequence.claim_alliance_gifts_premium.label"
     visible: true
     sequences:
       - type: action
@@ -72,7 +72,7 @@ sequences:
         value: return
 
   claim_alliance_gifts_all:
-    label: "Claim all alliance gifts"
+    label: "sequence.claim_alliance_gifts_all.label"
     visible: true
     sequences:
       - type: sequence
@@ -83,7 +83,7 @@ sequences:
         value: claim_alliance_gifts_premium
 
   harvest_all_mines:
-    label: "Récolter les mines"
+    label: "sequence.harvest_all_mines.label"
     visible: true
     sequences:
       - type: script

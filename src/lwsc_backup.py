@@ -3,14 +3,13 @@ import threading
 import random
 import pyautogui
 import numpy as np
-import os
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Union, Set
+from textual.app import App, ComposeResult
+from textual.widgets import Header, Footer, Button, Log, Label, TabbedContent, TabPane, Checkbox
+from textual.containers import Horizontal, Vertical, ItemGrid
+from textual import work
 from PIL import Image
-
-import tkinter as tk
-from tkinter import ttk
-from pynput import keyboard
 
 from model.window import Window
 from model.roi import ROIRegistry
@@ -22,35 +21,75 @@ from model.sequence import SequenceManager, SequenceSpec, SequenceStep
 from model.mouse import human_move
 
 
-class Lwsc:
+class Lwsc(App):
+    CSS = """
+    #state_banner {
+        width: 100%;
+        text-align: center;
+        text-style: bold;
+        padding: 1;
+        background: $boost;
+        border: solid $accent;
+        margin-top: 1;
+    }
+    TabbedContent {
+        height: 1fr;
+        margin-top: 1;
+    }
+    #actions_container, #sequences_container, #params_container {
+        padding: 1;
+        height: 1fr;
+    }
+    #bottom_actions {
+        height: auto;
+        width: 100%;
+        margin-top: 1;
+    }
+    #bottom_actions Button {
+        min-width: 18;
+    }
+    #params_container Checkbox {
+        margin-bottom: 1;
+    }
+    .section_title {
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    .info_muted {
+        color: $text-muted;
+        padding: 1;
+        text-style: italic;
+    }
+    #action_buttons, #sequence_buttons {
+        height: auto;
+        width: 100%;
+        margin-bottom: 1;
+        grid-gutter: 1 1;
+    }
+    #action_buttons Button, #sequence_buttons Button {
+        width: 100%;
+    }
+    #buttons { height: auto; width: 100%; margin-top: 1; margin-bottom: 1; }
+    #buttons Button { margin-right: 1; }
+    Log { border: solid green; height: 1fr; }
+    """
+
     lang: str = "en"
     poll_interval: float = 0.05  # Fréquence d'analyse : jusqu'à 20 fois par seconde (instantané)
 
     def __init__(self):
-        project_root = Path(__file__).resolve().parent.parent
-        config_dir = project_root / "config"
-        
-        self.settings_file = config_dir / "settings.yaml"
-        self.settings: Dict[str, Any] = self.load_settings()
-        # Apply stored language
-        self.lang = self.settings.get("language", "en")
-        # Load translation dictionary
-        import yaml
-        lang_file = config_dir / "lang" / f"{self.lang}.yaml"
-        self.translations = yaml.safe_load(open(lang_file, "r", encoding="utf-8")) if lang_file.exists() else {}
-
-        self.root = tk.Tk()
-        self.root.title(self.translations.get("ui.title", "LWSC"))
-        self.root.geometry("800x600")
-        self.root.attributes("-topmost", True)
-
+        super().__init__()
         self._stop_tracking = threading.Event()
-        self.stop_action_event = threading.Event()
-        self.play_event = threading.Event()
-        self.play_event.set()
         self.tracking_enabled = True
+        self.settings: Dict[str, bool] = {
+            "auto_help": False,
+            "auto_loot": False,
+        }
         self.last_resolved_rois: Dict[str, Any] = {}
         self.last_visible_buttons: Dict[str, Any] = {}
+
+        project_root = Path(__file__).resolve().parent.parent
+        config_dir = project_root / "config"
 
         self.action_mgr = ActionManager(config_dir / "actions.yaml")
         self.sequence_mgr = SequenceManager(config_dir / "sequences.yaml")
@@ -93,40 +132,6 @@ class Lwsc:
         self.game_window = Window("Last War")
         self.mouse_speed_factor: float = 3.0  # Vitesse réaliste 'human x3'
 
-        self.setup_ui()
-        self.root.withdraw()
-
-    def load_settings(self) -> Dict[str, Any]:
-        import yaml
-        default_settings = {
-            "auto_help": False,
-            "auto_loot": False,
-            "language": "en",
-            "shortcuts": {
-                "toggle_window": {"key": "<ctrl>+w", "description": "shortcuts.toggle_window.description"},
-                "toggle_tracking": {"key": "<ctrl>+p", "description": "shortcuts.toggle_tracking.description"},
-                "stop_action": {"key": "<ctrl>+s", "description": "shortcuts.stop_action.description"}
-            }
-        }
-        if not self.settings_file.exists():
-            return default_settings
-        try:
-            with open(self.settings_file, 'r', encoding='utf-8') as f:
-                data = yaml.safe_load(f)
-                if isinstance(data, dict):
-                    default_settings.update(data)
-        except Exception as e:
-            print(f"Error loading settings: {e}")
-        return default_settings
-
-    def save_settings(self) -> None:
-        import yaml
-        try:
-            with open(self.settings_file, 'w', encoding='utf-8') as f:
-                yaml.dump(self.settings, f)
-        except Exception as e:
-            print(f"Error saving settings: {e}")
-
     @property
     def auto_help_enabled(self) -> bool:
         return self.settings.get("auto_help", False)
@@ -143,254 +148,127 @@ class Lwsc:
     def auto_loot_enabled(self, value: bool) -> None:
         self.settings["auto_loot"] = value
 
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Label("🎮 État du jeu : [bold cyan]INITIALISATION...[/bold cyan]", id="state_banner")
+        with TabbedContent(initial="tab_actions"):
+            with TabPane("Actions", id="tab_actions"):
+                with Vertical(id="actions_container"):
+                    yield Label("⚡ Actions disponibles :", classes="section_title")
+                    with ItemGrid(id="action_buttons", min_column_width=18):
+                        initial_actions = [act for act in self.action_mgr.get_actions_for_state("headquarter") if act.id != "return"]
+                        self.displayed_actions = [act.id for act in initial_actions]
+                        for act in initial_actions:
+                            yield Button(act.label, id=f"act_{act.id}", variant=act.variant)
+                    with Horizontal(id="bottom_actions"):
+                        pass
+            with TabPane("Sequences", id="tab_sequences"):
+                with Vertical(id="sequences_container"):
+                    yield Label("📜 Séquences disponibles :", classes="section_title")
+                    with ItemGrid(id="sequence_buttons", min_column_width=24):
+                        visible_seqs = self.sequence_mgr.get_visible_sequences()
+                        if visible_seqs:
+                            for seq in visible_seqs:
+                                yield Button(seq.label, id=f"seq_{seq.id}", variant=seq.variant)
+                        else:
+                            yield Label("Aucune séquence configurée.", classes="info_muted")
+            with TabPane("Parameters", id="tab_parameters"):
+                with Vertical(id="params_container"):
+                    yield Label("⚙️ Automatisation & Paramètres :", classes="section_title")
+                    yield Checkbox("Auto Help", id="chk_auto_help", value=self.auto_help_enabled)
+                    yield Checkbox("Auto Loot", id="chk_auto_loot", value=self.auto_loot_enabled)
+            with TabPane("Debug", id="tab_debug"):
+                with Horizontal(id="buttons"):
+                    yield Button("Screen", id="screen_button", variant="success")
+                    yield Button("Save ROIs", id="save_rois_button", variant="primary")
+                    yield Button("Tracking: ON", id="toggle_tracking_button", variant="error")
+                yield Log(id="console")
+        yield Footer()
 
-
-    def update_actions(self, state: Optional[str], visible_buttons: Optional[Union[set, list, dict]] = None) -> None:
-        self.root.after(0, self._update_actions_gui, state, visible_buttons)
-
-    def on_language_change(self, event=None) -> None:
-        """Handler for language selection changes"""
-        new_lang = self.language_var.get()
-        if new_lang and new_lang != self.lang:
-            self.lang = new_lang
-            self.settings["language"] = new_lang
-            self.save_settings()
-            self.log_message(f"⚙️ Language changed to {new_lang}")
-            # Reinitialize components that depend on language
-            # Simple approach: recreate matcher, state_mgr, button_mgr with new lang
-            project_root = Path(__file__).resolve().parent.parent
-            config_dir = project_root / "config"
-            self.matcher = ImageMatcher(templates_root=project_root / "templates", lang=self.lang)
-            self.matcher.preload_templates()
-            self.roi_reg = ROIRegistry(config_dir / "rois.yaml")
-            self.state_mgr = StateManager(config_dir / "states.yaml", templates_root=project_root / "templates", lang=self.lang, matcher=self.matcher)
-            self.button_mgr = ButtonManager(config_dir / "buttons.yaml", templates_root=project_root / "templates", lang=self.lang, matcher=self.matcher)
-            # Refresh UI labels where needed (shortcuts will be reloaded on next UI update)
-            self.log_message("🛈 UI components refreshed for new language.")
-        
-    def _update_actions_gui(self, state: Optional[str], visible_buttons: Optional[Union[set, list, dict]] = None) -> None:
-        all_actions = self.action_mgr.get_actions_for_state(state)
-        v_set = set(visible_buttons.keys()) if isinstance(visible_buttons, dict) else (set(visible_buttons) if visible_buttons else set())
-        
-        action_states = []
-        for act in all_actions:
-            is_enabled = act.always_show or not act.buttons or any(b in v_set for b in act.buttons)
-            action_states.append((act, is_enabled))
-            
-        current_state_sig = [(act.id, is_enabled) for act, is_enabled in action_states]
-        if hasattr(self, 'displayed_actions_sig') and getattr(self, 'displayed_actions_sig') == current_state_sig:
+    async def update_actions(
+        self,
+        state: Optional[str],
+        visible_buttons: Optional[Union[set, list, dict]] = None,
+    ) -> None:
+        """Met à jour dynamiquement les boutons d'actions selon l'état actuel et la visibilité des boutons."""
+        actions = self.action_mgr.get_actions(state, visible_buttons=visible_buttons)
+        action_ids = [act.id for act in actions]
+        if action_ids == self.displayed_actions:
             return
-        self.displayed_actions_sig = current_state_sig
-        
-        for widget in self.actions_frame.winfo_children():
-            widget.destroy()
-        for widget in self.bottom_actions_frame.winfo_children():
-            widget.destroy()
-            
-        regular_actions = [item for item in action_states if item[0].id != "return"]
-        return_act_item = next((item for item in action_states if item[0].id == "return"), None)
-        
-        if regular_actions:
-            for act, is_enabled in regular_actions:
-                btn = ttk.Button(self.actions_frame, text=self.translations.get(act.label, act.label), command=lambda a=act.id: self.start_action(a))
-                if not is_enabled:
-                    btn.state(['disabled'])
-                btn.pack(fill=tk.X, pady=2)
-        elif not return_act_item:
-            tk.Label(self.actions_frame, text=self.translations.get("ui.no_actions", "Aucune action disponible pour cet état."), fg="gray").pack()
-            
-        if return_act_item:
-            act, is_enabled = return_act_item
-            btn = ttk.Button(self.bottom_actions_frame, text=self.translations.get(act.label, act.label), command=lambda a=act.id: self.start_action(a))
-            if not is_enabled:
-                btn.state(['disabled'])
-            btn.pack(fill=tk.X, pady=2)
+        self.displayed_actions = action_ids
 
-        self.root.after(10, self.resize_notebook)
+        regular_actions = [act for act in actions if act.id != "return"]
+        return_act = next((act for act in actions if act.id == "return"), None)
 
-
-    def setup_ui(self):
-        main_frame = ttk.Frame(self.root, padding=10)
-        main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        self.banner_var = tk.StringVar(value=self.translations.get("ui.banner_initial", "🎮 État du jeu : INITIALISATION..."))
-        ttk.Label(main_frame, textvariable=self.banner_var).pack(fill=tk.X, pady=5)
-        
-        self.notebook = ttk.Notebook(main_frame)
-        self.notebook.pack(fill=tk.BOTH, expand=False, pady=5)
-        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
-        
-        self.tab_actions = ttk.Frame(self.notebook)
-        self.tab_sequences = ttk.Frame(self.notebook)
-        self.tab_params = ttk.Frame(self.notebook)
-        self.tab_debug = ttk.Frame(self.notebook)
-        self.tab_help = ttk.Frame(self.notebook)
-        
-        self.notebook.add(self.tab_actions, text=self.translations.get("ui.tab_actions", "Actions"))
-        self.notebook.add(self.tab_sequences, text=self.translations.get("ui.tab_sequences", "Sequences"))
-        self.notebook.add(self.tab_params, text=self.translations.get("ui.tab_parameters", "Parameters"))
-        self.notebook.add(self.tab_debug, text=self.translations.get("ui.tab_debug", "Debug"))
-        self.notebook.add(self.tab_help, text=self.translations.get("ui.tab_help", "Help"))
-        
-        # Actions
-        self.actions_frame = ttk.Frame(self.tab_actions)
-        self.actions_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        self.bottom_actions_frame = ttk.Frame(self.tab_actions)
-        self.bottom_actions_frame.pack(fill=tk.X, pady=5)
-        
-        # Sequences
-        seq_frame = ttk.Frame(self.tab_sequences)
-        seq_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        for seq in self.sequence_mgr.get_visible_sequences():
-            ttk.Button(seq_frame, text=self.translations.get(seq.label, seq.label), command=lambda s=seq.id: self.start_sequence(s)).pack(fill=tk.X, pady=2)
-            
-        # Params
-        self.auto_help_var = tk.BooleanVar(value=self.auto_help_enabled)
-        self.auto_loot_var = tk.BooleanVar(value=self.auto_loot_enabled)
-        ttk.Checkbutton(self.tab_params, text=self.translations.get("ui.auto_help", "Auto Help"), variable=self.auto_help_var, command=self.on_param_change).pack(anchor=tk.W)
-        ttk.Checkbutton(self.tab_params, text=self.translations.get("ui.auto_loot", "Auto Loot"), variable=self.auto_loot_var, command=self.on_param_change).pack(anchor=tk.W)
-        
-        # Language selection
-        ttk.Label(self.tab_params, text=self.translations.get("ui.language_label", "Language:" )).pack(anchor=tk.W, pady=(5,0))
-        self.language_var = tk.StringVar(value=self.lang)
-        # Determine available language files
-        lang_dir = Path(__file__).resolve().parent.parent / "config" / "lang"
-        available_langs = [p.stem for p in lang_dir.iterdir() if p.is_file() and p.suffix == ".yaml"]
-        self.language_combo = ttk.Combobox(self.tab_params, textvariable=self.language_var, values=available_langs, state="readonly")
-        self.language_combo.pack(fill=tk.X, pady=2)
-        self.language_combo.bind("<<ComboboxSelected>>", self.on_language_change)
-        
-        # Load shortcuts
-        shortcuts_data = self.settings.get("shortcuts", {})
-                
-        # Default fallback values if missing
-        k_win = shortcuts_data.get("toggle_window", {}).get("key", "<ctrl>+w")
-        k_trk = shortcuts_data.get("toggle_tracking", {}).get("key", "<ctrl>+p")
-        k_stp = shortcuts_data.get("stop_action", {}).get("key", "<ctrl>+s")
-        
-        desc_win = self.translations.get(shortcuts_data.get("toggle_window", {}).get("description", "shortcuts.toggle_window.description"), "Afficher / Cacher la fenêtre")
-        desc_trk = self.translations.get(shortcuts_data.get("toggle_tracking", {}).get("description", "shortcuts.toggle_tracking.description"), "Mettre en pause / Relancer le tracking")
-        desc_stp = self.translations.get(shortcuts_data.get("stop_action", {}).get("description", "shortcuts.stop_action.description"), "Interrompre l'action")
-
-        # Help
-        help_frame = ttk.Frame(self.tab_help, padding=10)
-        help_frame.pack(fill=tk.BOTH, expand=True)
-        tk.Label(help_frame, text=self.translations.get("ui.help.global_shortcuts", "Raccourcis clavier globaux :"), font=("Helvetica", 10, "bold"), anchor="w").pack(fill=tk.X, pady=(0, 5))
-        
-        shortcuts_list = [
-            (k_win, desc_win),
-            (k_trk, desc_trk),
-            (k_stp, desc_stp)
-        ]
-        
-        for keys, desc in shortcuts_list:
-            display_key = keys.replace("<ctrl>+", "Ctrl + ").replace("<shift>+", "Shift + ").replace("<alt>+", "Alt + ").upper()
-            f = ttk.Frame(help_frame)
-            f.pack(fill=tk.X, pady=2)
-            tk.Label(f, text=display_key, font=("Helvetica", 9, "bold"), width=10, anchor="e").pack(side=tk.LEFT, padx=(0, 10))
-            tk.Label(f, text=desc, anchor="w", justify=tk.LEFT, wraplength=400).pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-        # Debug
-        btn_frame = ttk.Frame(self.tab_debug)
-        btn_frame.pack(fill=tk.X, pady=5)
-        ttk.Button(btn_frame, text=self.translations.get("ui.debug.screen", "Screen"), command=lambda: threading.Thread(target=self.screenshot, daemon=True).start()).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text=self.translations.get("ui.debug.save_rois", "Save ROIs"), command=lambda: threading.Thread(target=self.save_rois, daemon=True).start()).pack(side=tk.LEFT, padx=2)
-        self.tracking_btn = ttk.Button(btn_frame, text=self.translations.get("ui.tracking.on", "Tracking: ON"), command=self.toggle_tracking)
-        self.tracking_btn.pack(side=tk.LEFT, padx=2)
-        
-        
-        self.console = tk.Text(main_frame, bg="black", fg="white", state=tk.DISABLED, height=8)
-        self.console.pack(fill=tk.BOTH, expand=True, pady=5)
-        
-        self.log_message(f"⚡ {self.preloaded_count} templates préchargés en RAM ({self.lang.upper()})")
-        self.log_message("🚀 Démarrage du thread d'analyse continue des états...")
-        threading.Thread(target=self.state_supervisor, daemon=True).start()
-
-        # Keyboard listener
-        self.listener = keyboard.GlobalHotKeys({
-            k_win: self.toggle_window,
-            k_trk: lambda: self.root.after(0, self.toggle_tracking),
-            k_stp: self.stop_current_action
-        })
-        self.listener.start()
-
-    def on_tab_changed(self, event):
-        self.resize_notebook()
-
-    def resize_notebook(self):
-        self.root.update_idletasks()
         try:
-            tab = self.notebook.nametowidget(self.notebook.select())
-            self.notebook.configure(height=tab.winfo_reqheight())
+            container = self.query_one("#action_buttons", ItemGrid)
+            await container.remove_children()
+            if regular_actions:
+                for action in regular_actions:
+                    await container.mount(Button(action.label, id=f"act_{action.id}", variant=action.variant))
+            elif not return_act:
+                await container.mount(Label("Aucune action disponible pour cet état.", classes="info_muted"))
+
+            bottom_container = self.query_one("#bottom_actions", Horizontal)
+            await bottom_container.remove_children()
+            if return_act:
+                await bottom_container.mount(Button(return_act.label, id=f"act_{return_act.id}", variant="error"))
         except Exception:
             pass
 
-    def toggle_window(self):
-        self.root.after(0, self._toggle_window)
+    async def update_actions_for_state(self, state: Optional[str]) -> None:
+        """Compatibilité descendante pour mise à jour par état."""
+        await self.update_actions(state, getattr(self, "last_visible_buttons", None))
 
-    def _toggle_window(self):
-        import subprocess
-        try:
-            result = subprocess.run(["xdotool", "getactivewindow", "getwindowname"], capture_output=True, text=True, check=True)
-            active_title = result.stdout.strip().lower()
-            if "last war" not in active_title and "lwsc" not in active_title:
-                return
-        except Exception:
-            pass
+    def on_mount(self) -> None:
+        self.query_one("#console", Log).write_line(
+            f"⚡ {self.preloaded_count} templates préchargés en RAM ({self.lang.upper()})"
+        )
+        self.query_one("#console", Log).write_line("🚀 Démarrage du thread d'analyse continue des états...")
+        self.state_supervisor()
 
-        if self.root.winfo_viewable():
-            self.root.withdraw()
-        else:
-            self.root.deiconify()
-            if not self.tracking_enabled:
-                self.toggle_tracking()
+    def on_unmount(self) -> None:
+        self._stop_tracking.set()
 
-    def start_sequence(self, seq_id):
-        threading.Thread(target=self.run_sequence, args=(seq_id,), daemon=True).start()
+    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+        key = (event.checkbox.id or "").replace("chk_", "")
+        self.settings[key] = event.value
+        status = "activé" if event.value else "désactivé"
+        self.query_one("#console", Log).write_line(f"⚙️ Paramètre : {event.checkbox.label} {status}")
 
-    def start_action(self, action_id):
-        action = self.action_mgr.get(action_id)
-        if action:
-            self.stop_action_event.clear()
-            act_label_t = self.translations.get(action.label, action.label)
-            self.log_message(f"⚡ Action '{act_label_t}' déclenchée...")
-            if action.drag:
-                threading.Thread(target=self.action_drag, args=(action,), daemon=True).start()
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        btn_id = event.button.id or ""
+        if event.button.id == "screen_button":
+            self.query_one("#console", Log).write_line("Démarrage du worker screen...")
+            self.screenshot()
+        elif event.button.id == "save_rois_button":
+            self.query_one("#console", Log).write_line("Démarrage de la sauvegarde des ROIs...")
+            self.save_rois()
+        elif event.button.id == "toggle_tracking_button":
+            self.tracking_enabled = not self.tracking_enabled
+            if self.tracking_enabled:
+                event.button.label = "Tracking: ON"
+                event.button.variant = "error"
+                self.query_one("#console", Log).write_line("▶️ Surveillance automatique réactivée")
             else:
-                threading.Thread(target=self.action_click_button, args=(action,), daemon=True).start()
+                event.button.label = "Tracking: OFF"
+                event.button.variant = "default"
+                self.query_one("#console", Log).write_line("⏸️ Surveillance automatique mise en pause")
+        elif btn_id.startswith("act_"):
+            action_id = btn_id[4:]
+            action = self.action_mgr.get(action_id)
+            if action:
+                self.query_one("#console", Log).write_line(f"⚡ Action '{action.label}' déclenchée...")
+                if action.drag:
+                    self.action_drag(action)
+                else:
+                    self.action_click_button(action)
+        elif btn_id.startswith("seq_"):
+            seq_id = btn_id[4:]
+            sequence = self.sequence_mgr.get(seq_id)
+            if sequence:
+                self.run_sequence(sequence.id)
 
-    def stop_current_action(self):
-        self.stop_action_event.set()
-        self.root.after(0, lambda: self.log_message("🛑 Interruption de l'action/séquence demandée par l'utilisateur."))
-
-    def on_param_change(self):
-        self.auto_help_enabled = self.auto_help_var.get()
-        self.auto_loot_enabled = self.auto_loot_var.get()
-        # Update language if changed via combobox
-        self.lang = self.language_var.get()
-        self.settings["language"] = self.lang
-        self.save_settings()
-        self.log_message(f"⚙️ Auto Help: {self.auto_help_enabled}, Auto Loot: {self.auto_loot_enabled}, Language: {self.lang}")
-
-    def toggle_tracking(self):
-        self.tracking_enabled = not self.tracking_enabled
-        if self.tracking_enabled:
-            self.play_event.set()
-            self.tracking_btn.config(text=self.translations.get("ui.tracking.on", "Tracking: ON"))
-            self.log_message(self.translations.get("log.tracking_resumed", "▶️ Surveillance automatique réactivée"))
-        else:
-            self.play_event.clear()
-            self.tracking_btn.config(text=self.translations.get("ui.tracking.off", "Tracking: OFF"))
-            self.log_message(self.translations.get("log.tracking_paused", "⏸️ Surveillance automatique mise en pause"))
-
-    def log_message(self, msg):
-        self.console.config(state=tk.NORMAL)
-        self.console.insert(tk.END, str(msg) + "\n")
-        self.console.see(tk.END)
-        self.console.config(state=tk.DISABLED)
-        
-    def update_banner_label(self, text):
-        self.banner_var.set(text)
     def _find_and_click_button(
         self,
         button_names: List[str],
@@ -409,7 +287,7 @@ class Lwsc:
 
         start_time = time.time()
         while True:
-            if self._stop_tracking.is_set() or self.stop_action_event.is_set():
+            if self._stop_tracking.is_set():
                 return False
 
             shot = game_window.capture()
@@ -476,7 +354,7 @@ class Lwsc:
 
         start_time = time.time()
         while True:
-            if self._stop_tracking.is_set() or self.stop_action_event.is_set():
+            if self._stop_tracking.is_set():
                 return False
 
             cur = (self.current_state or "").lower()
@@ -515,17 +393,17 @@ class Lwsc:
             log_ui(f"⚠️ [Wait State] Timeout ({timeout}s) en attente de l'état : {', '.join(targets)} (état actuel : '{self.current_state}')")
         return False
 
-    
+    @work(thread=True)
+
     def action_drag(self, action: Any) -> None:
         import pyautogui
         import time
         from model.roi import ROISpec
         
-        log_ui = lambda msg: self.root.after(0, self.log_message, msg)
+        log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
         
         if action.cooldown > 0 and time.time() - action.last_triggered < action.cooldown:
-            act_label_t = self.translations.get(action.label, action.label)
-            log_ui(f"⏳ Action '{act_label_t}' ignorée (cooldown de {action.cooldown}s).")
+            log_ui(f"⏳ Action '{action.label}' ignorée (cooldown de {action.cooldown}s).")
             return
             
         drag = action.drag
@@ -542,8 +420,7 @@ class Lwsc:
         if drag.type == "relative":
             btn_id = next((b for b in action.buttons if b in self.last_visible_buttons), None)
             if not btn_id:
-                act_label_t = self.translations.get(action.label, action.label)
-                log_ui(f"⚠️ Action '{act_label_t}': Aucun bouton visible pour démarrer le drag.")
+                log_ui(f"⚠️ Action '{action.label}': Aucun bouton visible pour démarrer le drag.")
                 return
             _, match_data = self.last_visible_buttons[btn_id]
             start_x = match_data['pos'][0] + match_data['size'][0] // 2
@@ -595,18 +472,18 @@ class Lwsc:
             
         action.last_triggered = time.time()
 
+    @work(thread=True)
     def action_click_button(
         self,
         action: Any,
         log_ui: Any = None,
     ) -> None:
         if log_ui is None:
-            log_ui = lambda msg: self.root.after(0, self.log_message, msg)
+            log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
             
         import time
         if action.cooldown > 0 and time.time() - action.last_triggered < action.cooldown:
-            act_label_t = self.translations.get(action.label, action.label)
-            log_ui(f"⏳ Action '{act_label_t}' ignorée (cooldown de {action.cooldown}s).")
+            log_ui(f"⏳ Action '{action.label}' ignorée (cooldown de {action.cooldown}s).")
             return
             
         try:
@@ -615,7 +492,7 @@ class Lwsc:
                 hold_duration=action.hold_duration,
                 timeout=0.0,
                 restore_cursor=action.save_mouse,
-                action_name=self.translations.get(action.label, action.label),
+                action_name=action.label,
                 log_ui=log_ui,
             )
             if success:
@@ -623,8 +500,9 @@ class Lwsc:
         except Exception as e:
             log_ui(f"⚠️ Erreur lors de l'action : {e}")
 
+    @work(thread=True)
     def run_sequence(self, sequence_id: str) -> None:
-        log_ui = lambda msg: self.root.after(0, self.log_message, msg)
+        log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
         seq = self.sequence_mgr.get(sequence_id)
         if not seq:
             log_ui(f"⚠️ Séquence '{sequence_id}' introuvable.")
@@ -635,19 +513,17 @@ class Lwsc:
             return
 
         self._action_in_progress = True
-        self.stop_action_event.clear()
-        seq_label_t = self.translations.get(seq.label, seq.label)
-        log_ui(f"▶️ Démarrage de la séquence : '{seq_label_t}' ({len(seq.steps)} étapes)...")
+        log_ui(f"▶️ Démarrage de la séquence : '{seq.label}' ({len(seq.steps)} étapes)...")
 
         orig_pos = pyautogui.position()
         try:
             ok = self._execute_sequence(seq, log_ui=log_ui, depth=0)
             if ok:
-                log_ui(f"✅ Séquence '{seq_label_t}' terminée avec succès.")
+                log_ui(f"✅ Séquence '{seq.label}' terminée avec succès.")
             else:
-                log_ui(f"⚠️ Séquence '{seq_label_t}' interrompue.")
+                log_ui(f"⚠️ Séquence '{seq.label}' interrompue.")
         except Exception as e:
-            log_ui(f"⚠️ Erreur lors de la séquence '{seq_label_t}' : {e}")
+            log_ui(f"⚠️ Erreur lors de la séquence '{seq.label}' : {e}")
         finally:
             try:
                 human_move(orig_pos.x, orig_pos.y, speed_factor=self.mouse_speed_factor)
@@ -661,7 +537,7 @@ class Lwsc:
             return False
 
         for idx, step in enumerate(seq.steps, 1):
-            if self._stop_tracking.is_set() or self.stop_action_event.is_set():
+            if self._stop_tracking.is_set():
                 log_ui("🛑 Arrêt demandé pendant la séquence.")
                 return False
 
@@ -676,8 +552,6 @@ class Lwsc:
                     if act_spec.drag.type == "relative":
                         start_t = time.time()
                         while time.time() - start_t < timeout_val:
-                            if self._stop_tracking.is_set() or self.stop_action_event.is_set():
-                                break
                             win = self.get_game_window()
                             if win:
                                 self.refresh_rois(win, self.roi_reg.resolve_all(win.width, win.height))
@@ -693,7 +567,7 @@ class Lwsc:
                     if act_spec:
                         buttons = act_spec.buttons
                         hold = act_spec.hold_duration
-                        label = self.translations.get(act_spec.label, act_spec.label)
+                        label = act_spec.label
                     else:
                         buttons = [step.value]
                         hold = None
@@ -740,12 +614,11 @@ class Lwsc:
                         log_ui(f"⚠️ Sous-séquence '{step.value}' introuvable.")
                         return False
 
-                seq_label_t = self.translations.get(sub_seq.label, sub_seq.label)
-                log_ui(f"↪️ Sous-séquence '{seq_label_t}' en cours...")
+                log_ui(f"↪️ Sous-séquence '{sub_seq.label}' en cours...")
                 sub_ok = self._execute_sequence(sub_seq, log_ui=log_ui, depth=depth + 1)
                 if not sub_ok:
                     if is_optional:
-                        log_ui(f"ℹ️ Sous-séquence '{seq_label_t}' non terminée (optionnelle), poursuite de la séquence...")
+                        log_ui(f"ℹ️ Sous-séquence '{sub_seq.label}' non terminée (optionnelle), poursuite de la séquence...")
                     else:
                         return False
 
@@ -808,9 +681,10 @@ class Lwsc:
 
         return True
 
+    @work(thread=True)
     def screenshot(self) -> None:
 
-        log_ui = lambda msg: self.root.after(0, self.log_message, msg)
+        log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
 
         try:
             log_ui("Recherche de la fenêtre du jeu...")
@@ -835,8 +709,9 @@ class Lwsc:
         except Exception as e:
             log_ui(f"Erreur : {e}")
 
+    @work(thread=True)
     def save_rois(self) -> None:
-        log_ui = lambda msg: self.root.after(0, self.log_message, msg)
+        log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
 
         try:
             log_ui("Recherche de la fenêtre du jeu...")
@@ -884,9 +759,10 @@ class Lwsc:
         except Exception as e:
             log_ui(f"Erreur lors de la sauvegarde des ROIs : {e}")
 
+    @work(thread=True)
     def state_supervisor(self) -> None:
-        log_ui = lambda msg: self.root.after(0, self.log_message, msg)
-        update_banner = lambda text: self.root.after(0, self.update_banner_label, text)
+        log_ui = lambda msg: self.call_from_thread(self.query_one("#console", Log).write_line, msg)
+        update_banner = lambda text: self.call_from_thread(self.query_one("#state_banner", Label).update, text)
 
         roi_reg = self.roi_reg
         state_mgr = self.state_mgr
@@ -898,9 +774,9 @@ class Lwsc:
         game_window = self.game_window
 
         while not self._stop_tracking.is_set():
-            self.play_event.wait()
-            if self._stop_tracking.is_set():
-                break
+            if not self.tracking_enabled:
+                time.sleep(0.5)
+                continue
 
             try:
                 if not game_window.exists():
@@ -937,13 +813,13 @@ class Lwsc:
                 if detected_state != last_state:
                     old_s = (last_state or "INITIALISATION").upper()
                     new_s = detected_state.upper()
-                    update_banner(f"State: {new_s} ({score:.0%})")
+                    update_banner(f"🎮 Current state: [bold cyan]{new_s}[/bold cyan] ({score:.0%})")
                     details_str = ", ".join(f"{k}: {v:.1%}" for k, v in details.items()) if details else ""
                     log_ui(f"🔄 New state: [{new_s}] ({score:.1%}) {details_str}")
                     last_state = detected_state
 
                 # Filtrage continu des actions selon la présence réelle de leurs boutons dans le jeu
-                self.update_actions(detected_state, current_button_names)
+                self.call_from_thread(self.update_actions, detected_state, current_button_names)
 
                 if current_button_names != last_buttons:
                     added = current_button_names - last_buttons
@@ -979,30 +855,6 @@ class Lwsc:
             time.sleep(self.poll_interval)
 
 
-
-    class _MockConsole:
-        def __init__(self, app):
-            self.app = app
-        def write_line(self, msg):
-            self.app.root.after(0, self.app.log_message, msg)
-            
-    class _MockBanner:
-        def __init__(self, app):
-            self.app = app
-        def update(self, msg):
-            self.app.root.after(0, self.app.update_banner_label, msg)
-
-    def query_one(self, selector: str, *args):
-        if selector == "#console":
-            return self._MockConsole(self)
-        if selector == "#state_banner":
-            return self._MockBanner(self)
-        return None
-
-    def call_from_thread(self, func, *args, **kwargs):
-        self.root.after(0, lambda: func(*args, **kwargs))
-
-
 if __name__ == "__main__":
     app = Lwsc()
-    app.root.mainloop()
+    app.run()

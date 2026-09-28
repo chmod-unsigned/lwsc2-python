@@ -58,6 +58,21 @@ rois:
       - area
       - world
 
+  headquarter_pane:
+    x: 0
+    y: 0
+    width: full
+    height: full
+    exclude:
+      - chat
+      - bottom_left_pane
+      - right_pane
+      - heroes_global_button
+      - switch_global_button
+      - main_shop_button
+    states:
+      - headquarter
+
   # fictive modal for every modal
   standard_modal: &standard_modal
     align: center

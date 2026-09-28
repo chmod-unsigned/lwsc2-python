@@ -22,6 +22,7 @@ class ImageMatcher:
             Path(templates_dir) if templates_dir else (self.templates_root / self.lang)
         )
         self._cache_rgb: Dict[str, np.ndarray] = {}
+        self._cache_alpha: Dict[str, np.ndarray] = {}
         self._cache_gray: Dict[str, np.ndarray] = {}
         self._cache_sub4: Dict[str, np.ndarray] = {}
         self._cache_sub2: Dict[str, np.ndarray] = {}
@@ -105,12 +106,19 @@ class ImageMatcher:
                     resolved_str = str(resolved)
                     if resolved_str not in seen_resolved:
                         seen_resolved.add(resolved_str)
+
                         with Image.open(resolved) as loaded:
+                            if loaded.mode in ('RGBA', 'LA') or (loaded.mode == 'P' and 'transparency' in loaded.info):
+                                arr_alpha = np.array(loaded.convert("RGBA"), dtype=np.float32)[..., 3]
+                            else:
+                                arr_alpha = None
                             arr_rgb = np.array(loaded.convert("RGB"), dtype=np.float32)
+
                         arr_gray = np.dot(arr_rgb[..., :3], weights)
 
                         # Enregistrement sous la clé absolue
                         self._cache_rgb[resolved_str] = arr_rgb
+                        self._cache_alpha[resolved_str] = arr_alpha
                         self._cache_gray[resolved_str] = arr_gray
                         self._cache_sub4[resolved_str] = arr_gray[::4, ::4]
                         self._cache_sub2[resolved_str] = arr_gray[::2, ::2]
@@ -127,6 +135,7 @@ class ImageMatcher:
                     arr_gray = self._cache_gray[resolved_str]
 
                     self._cache_rgb[file_path.name] = arr_rgb
+                    self._cache_alpha[file_path.name] = self._cache_alpha[resolved_str]
                     self._cache_gray[file_path.name] = arr_gray
                     self._cache_sub4[file_path.name] = self._cache_sub4[resolved_str]
                     self._cache_sub2[file_path.name] = self._cache_sub2[resolved_str]
@@ -215,6 +224,42 @@ class ImageMatcher:
             elif img.shape[-1] >= 3:
                 return np.dot(img[..., :3].astype(np.float32), weights)
             return img.astype(np.float32)
+
+        raise TypeError(f"Type d'image non supporté : {type(img)}")
+
+    
+    def to_alpha_array(self, img: Union[Image.Image, np.ndarray, Path, str]) -> Optional[np.ndarray]:
+        """Extracts the alpha channel (H, W) as float32 if it exists, otherwise returns None."""
+        if isinstance(img, (str, Path)):
+            str_key = str(img)
+            if str_key in self._cache_alpha:
+                return self._cache_alpha[str_key]
+
+            path = self.resolve_template_path(img)
+            cache_key = str(path)
+            if cache_key in self._cache_alpha:
+                arr = self._cache_alpha[cache_key]
+                self._cache_alpha[str_key] = arr
+                return arr
+
+            with Image.open(path) as loaded:
+                if loaded.mode in ('RGBA', 'LA') or (loaded.mode == 'P' and 'transparency' in loaded.info):
+                    arr = np.array(loaded.convert("RGBA"), dtype=np.float32)[..., 3]
+                else:
+                    arr = None
+            self._cache_alpha[cache_key] = arr
+            self._cache_alpha[str_key] = arr
+            return arr
+
+        if isinstance(img, Image.Image):
+            if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+                return np.array(img.convert("RGBA"), dtype=np.float32)[..., 3]
+            return None
+
+        if isinstance(img, np.ndarray):
+            if img.ndim == 3 and img.shape[-1] == 4:
+                return img[..., 3].astype(np.float32)
+            return None
 
         raise TypeError(f"Type d'image non supporté : {type(img)}")
 
@@ -393,8 +438,7 @@ class ImageMatcher:
         return (score, (0, 0), (tw, th))
 
     def _match_orb(self, crop, template) -> Tuple[float, Tuple[int, int], Tuple[int, int]]:
-        # Multi-scale Template Matching (replacing ORB)
-        # Extremely robust for handling zoom levels and day/night cycles
+        # Multi-scale Template Matching
         try:
             import cv2
         except ImportError:
@@ -402,6 +446,10 @@ class ImageMatcher:
             
         crop_gray = self.to_gray_array(crop).astype(np.uint8)
         tpl_gray = self.to_gray_array(template).astype(np.uint8)
+        
+        tpl_alpha = self.to_alpha_array(template)
+        if tpl_alpha is not None:
+            tpl_alpha = tpl_alpha.astype(np.uint8)
         
         ch, cw = crop_gray.shape[:2]
         th, tw = tpl_gray.shape[:2]
@@ -413,8 +461,8 @@ class ImageMatcher:
         best_loc = (0, 0)
         best_dim = (tw, th)
         
-        # Test multiple scales from 0.4 (zoomed out) to 1.5 (zoomed in)
-        scales = np.linspace(0.4, 1.5, 12)
+        # Test multiple scales from 0.25 (zoomed out) to 2.5 (zoomed in)
+        scales = np.linspace(0.25, 2.5, 15)
         
         for scale in scales:
             width = int(tw * scale)
@@ -424,7 +472,11 @@ class ImageMatcher:
                 continue
                 
             resized_tpl = cv2.resize(tpl_gray, (width, height))
-            res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED)
+            if tpl_alpha is not None:
+                resized_mask = cv2.resize(tpl_alpha, (width, height))
+                res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED, mask=resized_mask)
+            else:
+                res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, max_loc = cv2.minMaxLoc(res)
             
             if max_val > best_score:
@@ -432,8 +484,6 @@ class ImageMatcher:
                 best_loc = max_loc
                 best_dim = (width, height)
                 
-        # If score is somewhat low, it might be due to UI overlays (like level bubbles)
-        # We return the best found score across all scales
         return (float(max(0.0, best_score)), best_loc, best_dim)
 
     def _match_orb_multiple(self, crop, template, threshold: float) -> List[Tuple[float, Tuple[int, int], Tuple[int, int]]]:
@@ -446,6 +496,10 @@ class ImageMatcher:
         crop_gray = self.to_gray_array(crop).astype(np.uint8)
         tpl_gray = self.to_gray_array(template).astype(np.uint8)
         
+        tpl_alpha = self.to_alpha_array(template)
+        if tpl_alpha is not None:
+            tpl_alpha = tpl_alpha.astype(np.uint8)
+        
         ch, cw = crop_gray.shape[:2]
         th, tw = tpl_gray.shape[:2]
         
@@ -453,7 +507,7 @@ class ImageMatcher:
             return []
             
         all_candidates = []
-        scales = np.linspace(0.4, 1.5, 12)
+        scales = np.linspace(0.25, 2.5, 15)
         
         for scale in scales:
             width = int(tw * scale)
@@ -463,7 +517,11 @@ class ImageMatcher:
                 continue
                 
             resized_tpl = cv2.resize(tpl_gray, (width, height))
-            res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED)
+            if tpl_alpha is not None:
+                resized_mask = cv2.resize(tpl_alpha, (width, height))
+                res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED, mask=resized_mask)
+            else:
+                res = cv2.matchTemplate(crop_gray, resized_tpl, cv2.TM_CCOEFF_NORMED)
             
             # Find all locations above threshold
             locs = np.where(res >= threshold)
@@ -485,7 +543,6 @@ class ImageMatcher:
                 acc_dim = accepted[2]
                 dist_x = abs(pos[0] - acc_pos[0])
                 dist_y = abs(pos[1] - acc_pos[1])
-                # If centers are closer than half the width/height, consider it the same object
                 if dist_x < max(dim[0], acc_dim[0]) * 0.5 and dist_y < max(dim[1], acc_dim[1]) * 0.5:
                     overlap = True
                     break
