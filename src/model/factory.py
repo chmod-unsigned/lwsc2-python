@@ -57,6 +57,35 @@ class WindowFactory(ABC):
         """Construit l'arborescence complète des fenêtres du système."""
         return cls.get_factory_for_current_os().build_tree(filter_active=filter_active)
 
+    @staticmethod
+    def get_active_window_title() -> str:
+        """Retourne le titre de la fenêtre active courante selon l'OS."""
+        system = platform.system()
+        if system == "Linux":
+            import subprocess
+            try:
+                result = subprocess.run(["xdotool", "getactivewindow", "getwindowname"], capture_output=True, text=True, check=True)
+                return result.stdout.strip()
+            except Exception:
+                return ""
+        elif system == "Windows":
+            import ctypes
+            hwnd = ctypes.windll.user32.GetForegroundWindow()
+            if hwnd:
+                length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+                buff = ctypes.create_unicode_buffer(length + 1)
+                ctypes.windll.user32.GetWindowTextW(hwnd, buff, length + 1)
+                return buff.value
+            return ""
+        elif system == "Darwin":
+            import subprocess
+            try:
+                script = 'tell application "System Events" to get name of first application process whose frontmost is true'
+                result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, check=True)
+                return result.stdout.strip()
+            except Exception:
+                return ""
+        return ""
 
 class LinuxWindowFactory(WindowFactory):
     def create_window(self, pid: Optional[int] = None, title: str = "") -> IWindow:

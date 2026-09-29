@@ -112,3 +112,40 @@ def human_click(
         return True
     except Exception:
         return False
+
+
+import threading
+from pynput.mouse import Listener as MouseListener
+
+class MouseBlocker:
+    """
+    Bloque les entrées physiques de la souris de l'utilisateur tout en
+    laissant passer les événements générés par le script (pyautogui).
+    Supporte les appels imbriqués (re-entrant).
+    """
+    def __init__(self):
+        self.listener = None
+        self.lock = threading.Lock()
+        self.count = 0
+    
+    def block(self):
+        with self.lock:
+            self.count += 1
+            if self.count == 1:
+                self.listener = MouseListener(suppress=True)
+                self.listener.start()
+                
+    def unblock(self):
+        with self.lock:
+            if self.count > 0:
+                self.count -= 1
+                if self.count == 0 and self.listener:
+                    self.listener.stop()
+                    self.listener = None
+
+    def __enter__(self):
+        self.block()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.unblock()
