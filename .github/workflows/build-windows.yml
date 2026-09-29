@@ -1,0 +1,56 @@
+name: Build Windows Executable
+
+on:
+  push:
+    tags:
+      - 'v*' # S'exécute quand on pousse un tag du type v1.0, v2.1...
+  workflow_dispatch: # Permet de le lancer manuellement depuis l'interface GitHub
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build Executable with PyInstaller
+      run: |
+        # Crée un fichier exécutable unique (sans console si on veut, mais on garde la console au cas où)
+        pyinstaller --noconfirm --onedir --name "LWSC" src/lwsc.py
+
+    - name: Prepare distribution folder
+      run: |
+        # Copie les dossiers nécessaires à côté de l'exécutable pour qu'ils puissent être modifiés par l'utilisateur
+        Copy-Item -Path "config" -Destination "dist/LWSC/config" -Recurse
+        Copy-Item -Path "templates" -Destination "dist/LWSC/templates" -Recurse
+        
+    - name: Create ZIP archive
+      run: |
+        Compress-Archive -Path dist/LWSC/* -DestinationPath LWSC-Windows.zip
+
+    - name: Upload Artifact (Workflow)
+      uses: actions/upload-artifact@v4
+      with:
+        name: LWSC-Windows
+        path: LWSC-Windows.zip
+
+    - name: Release (if Tagged)
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: LWSC-Windows.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
