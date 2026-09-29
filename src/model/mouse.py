@@ -2,7 +2,17 @@ import time
 import math
 import random
 from typing import Optional, Tuple
+import sys
 import pyautogui
+
+if sys.platform == "win32":
+    try:
+        import pydirectinput as _mouse
+        _mouse.PAUSE = 0.0
+    except ImportError:
+        _mouse = pyautogui
+else:
+    _mouse = pyautogui
 
 # Désactiver les délais par défaut bloquants de PyAutoGUI
 pyautogui.PAUSE = 0.0
@@ -36,7 +46,7 @@ def human_move(
     dist = math.hypot(dx, dy)
 
     if dist < 4:
-        pyautogui.moveTo(target_x, target_y)
+        _mouse.moveTo(target_x, target_y)
         return
 
     # Durée proportionnelle à la distance selon Fitts' law simplifiée
@@ -63,10 +73,10 @@ def human_move(
         u = 1 - t
         cx = u**3 * x0 + 3 * u**2 * t * p1_x + 3 * u * t**2 * p2_x + t**3 * target_x
         cy = u**3 * y0 + 3 * u**2 * t * p1_y + 3 * u * t**2 * p2_y + t**3 * target_y
-        pyautogui.moveTo(int(cx), int(cy))
+        _mouse.moveTo(int(cx), int(cy))
         time.sleep(sleep_dt)
 
-    pyautogui.moveTo(target_x, target_y)
+    _mouse.moveTo(target_x, target_y)
 
 
 def human_click(
@@ -97,12 +107,12 @@ def human_click(
         time.sleep(random.uniform(0.02, 0.04))
 
         # 3. Clic humain (descente, maintien, remontée)
-        pyautogui.mouseDown(button="left")
+        _mouse.mouseDown(button="left")
         if duration is not None and duration > 0:
             time.sleep(duration)
         else:
             time.sleep(random.uniform(0.03, 0.05))
-        pyautogui.mouseUp(button="left")
+        _mouse.mouseUp(button="left")
 
         # 4. Restauration naturelle si demandée
         if restore_cursor:

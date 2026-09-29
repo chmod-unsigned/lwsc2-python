@@ -6,3 +6,4 @@ numpy>=2.4.6
 Pillow>=12.2.0
 opencv-python-headless>=4.10.0
 pynput>=1.7.6
+pydirectinput; sys_platform == 'win32'

@@ -2,6 +2,15 @@ import time
 import threading
 import random
 import pyautogui
+import sys
+if sys.platform == 'win32':
+    try:
+        import pydirectinput as _mouse
+        _mouse.PAUSE = 0.0
+    except ImportError:
+        _mouse = pyautogui
+else:
+    _mouse = pyautogui
 import numpy as np
 import os
 from pathlib import Path
@@ -518,6 +527,15 @@ class Lwsc:
     
     def action_drag(self, action: Any) -> None:
         import pyautogui
+import sys
+if sys.platform == 'win32':
+    try:
+        import pydirectinput as _mouse
+        _mouse.PAUSE = 0.0
+    except ImportError:
+        _mouse = pyautogui
+else:
+    _mouse = pyautogui
         import time
         from model.roi import ROISpec
         
@@ -582,16 +600,16 @@ class Lwsc:
         if action.save_mouse:
             orig_mouse = pyautogui.position()
             
-        pyautogui.moveTo(start_x, start_y)
+        _mouse.moveTo(start_x, start_y)
         time.sleep(0.05)
-        pyautogui.mouseDown(button="left")
+        _mouse.mouseDown(button="left")
         time.sleep(0.1)
-        pyautogui.moveTo(end_x, end_y, duration=drag.duration)
+        _mouse.moveTo(end_x, end_y, duration=drag.duration)
         time.sleep(0.2)
-        pyautogui.mouseUp(button="left")
+        _mouse.mouseUp(button="left")
         
         if orig_mouse:
-            pyautogui.moveTo(*orig_mouse)
+            _mouse.moveTo(*orig_mouse)
             
         action.last_triggered = time.time()
 
@@ -718,9 +736,9 @@ class Lwsc:
                 is_optional = bool(step.kwargs.get("optional", False))
                 if step.value == "current_position":
                     time.sleep(random.uniform(0.04, 0.08))
-                    pyautogui.mouseDown(button="left")
+                    _mouse.mouseDown(button="left")
                     time.sleep(random.uniform(0.03, 0.05))
-                    pyautogui.mouseUp(button="left")
+                    _mouse.mouseUp(button="left")
                     pos = pyautogui.position()
                     log_ui(f"🖱️ [Clic] Clic effectué à la position actuelle ({pos.x}, {pos.y})")
                 else:
