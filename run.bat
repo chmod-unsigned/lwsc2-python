@@ -2,16 +2,21 @@
 
 :: Demande d'élévation de privilèges (Administrateur)
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
-if '%errorlevel%' NEQ '0' (
+if '%errorlevel%' NEQ '0' goto UACPrompt
+goto gotAdmin
+
+:UACPrompt
     echo Demande des privileges administrateur (requis pour interagir avec le jeu)...
     echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-    echo UAC.ShellExecute "cmd.exe", "/c ""%~s0"" %*", "", "runas", 1 >> "%temp%\getadmin.vbs"
+    set params= %*
+    echo UAC.ShellExecute "cmd.exe", "/c ""%~s0"" %params%", "", "runas", 1 >> "%temp%\getadmin.vbs"
     "%temp%\getadmin.vbs"
     del "%temp%\getadmin.vbs"
     exit /B
-)
-pushd "%CD%"
-CD /D "%~dp0"
+
+:gotAdmin
+    pushd "%CD%"
+    CD /D "%~dp0"
 
 set VENV=.venv
 set PYTHON=%VENV%\Scripts\python.exe

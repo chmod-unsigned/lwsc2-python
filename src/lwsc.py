@@ -527,15 +527,15 @@ class Lwsc:
     
     def action_drag(self, action: Any) -> None:
         import pyautogui
-import sys
-if sys.platform == 'win32':
-    try:
-        import pydirectinput as _mouse
-        _mouse.PAUSE = 0.0
-    except ImportError:
-        _mouse = pyautogui
-else:
-    _mouse = pyautogui
+        import sys
+        if sys.platform == 'win32':
+            try:
+                import pydirectinput as _mouse
+                _mouse.PAUSE = 0.0
+            except ImportError:
+                _mouse = pyautogui
+        else:
+            _mouse = pyautogui
         import time
         from model.roi import ROISpec
         
