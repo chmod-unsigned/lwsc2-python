@@ -1,5 +1,5 @@
 import platform
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from .base import IWindow
 from .geometry import WindowGeometry
@@ -115,6 +115,42 @@ class WindowsWindow(IWindow):
             ctypes.windll.user32.SetForegroundWindow(hwnd)
             return True
         return False
+
+    def click(
+        self,
+        x: int,
+        y: int,
+        restore_cursor: bool = False,
+        human_like: bool = True,
+        speed_factor: float = 3.0,
+        hold_duration: Optional[float] = None,
+        stay_clicked: Optional[float] = None,
+        **kwargs: Any,
+    ) -> bool:
+        """Envoie un clic de souris aux coordonnées relatives (x, y) de la zone cliente du jeu."""
+        self.exists()
+        
+        duration = hold_duration if hold_duration is not None else stay_clicked
+        try:
+            self.activate()
+            geom = self.get_geometry(include_decorations=False)
+            if geom:
+                abs_x = geom.left + int(x)
+                abs_y = geom.top + int(y)
+            else:
+                abs_x = int(x)
+                abs_y = int(y)
+
+            from .mouse import human_click
+            return human_click(
+                abs_x,
+                abs_y,
+                restore_cursor=restore_cursor,
+                speed_factor=speed_factor,
+                hold_duration=duration,
+            )
+        except Exception:
+            return False
 
     def get_tree(self) -> "WindowsWindow":
         """Construit récursivement l'arbre des fenêtres enfants via EnumChildWindows."""
